@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+if [ -z $1 ]
+then
+    echo "Usage : ./new_project [name]"
+    exit 1
+fi
+
+if [ ! -d $1 ]
+then
+    mkdir $1
+else
+    echo "Project $1 already exists, overwrite it ? [y/n]"
+    read answer
+    if [ $answer = "y" ]
+    then
+        rm -rf $1
+        mkdir $1
+    else
+        echo "Exit."
+        exit 1
+    fi
+fi
+chmod u+rwx $1
+mkdir $1/ori_intens
+# mkdir $1/result
+now=`dirname $0`
+# cp $now/npy2ccp4_xplor.py $1/result/npy2ccp4_xplor.py
+cp $now/show_result.py $1/show_result.py
+cp $now/config.ini $1/config.ini
+# ln -fs phase.py ./phase.py
+# ln -fs make_input.py ./make_input.py
+# cp $now/pbs.sh $1/pbs.sh
+
+echo " "
+echo "Successfully created work directory : $1"
+# echo "Success ! Now you need to do : "
+# echo "1) Put your data file in the directory ./$1/ori_intens"
+# echo "2) make soft link of your data file at ./$1 ('ln -fs ./ori_intens/xxx.bin ./data.bin')"
+# echo "3) Edit config.ini and run 'python make_input.py -i config.ini'"
+# echo "4) Edit pbs.sh and run 'qsub pbs.sh'"
+# echo "Then wait for your result."
+
