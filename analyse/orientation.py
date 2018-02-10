@@ -114,7 +114,7 @@ def draw_ori_Df(ori_bin, q_level=None):
 	import numpy as np
 	if ori_bin=="help" or type(ori_bin)!=str or q_level==None:
 		print("This function is used to do draw probability distribution of orientations from Dragonfly output")
-		print("    -> Input: ori_bin (path of Dragonfly orientation output 'ori_xxx.bin')")
+		print("    -> Input: ori_bin (path of Dragonfly orientation output 'orientations_xxx.bin')")
 		print("              q_level (int, the 'num_div' parameter used in Dragonfly)")
 		return
 
@@ -153,7 +153,7 @@ def Sphere_randp(algo, radius=None, num=None):
 		print("              radius (positive float, radius of the spherical surface)")
 		print("              num (positive int, how many points do you want)")
 		print("    -> Return: list, contains cartisian description and radius description : ")
-		print("               [numpy.ndarray([x(:),y(:),z(:)]), numpy.ndarray([theta(:),phi(:)])]")
+		print("               [numpy.ndarray shape=(Nd,3), numpy.ndarray shape=(Nd,2)]")
 		print("                shape = (num,3)                , shape = (num,2)")
 		print("[Notice] The returned theta is azimuth angle [0~2pi) and phi is zenith angle [-pi/2~pi/2]")
 		return

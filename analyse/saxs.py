@@ -41,9 +41,8 @@ def frediel_search(pattern, estimated_center=None):
 # calculate accumulate intensity profile of SPI patterns
 def inten_profile_vaccurate(dataset, *exp_param):
 	import numpy as np
-	if type(file_h5)!=str or file_h5 == 'help':
+	if type(dataset)!=str or dataset == 'help':
 		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
-		print("The patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
 		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
 		print("[Notice] We don't recommend you to use this function as it is very slow. Use 'inten_profile_vfast' instead.")
@@ -105,7 +104,6 @@ def cal_saxs(data):
 	import numpy as np
 	if type(data)!=np.ndarray:
 		print("This finction is used to calculate the saxs pattern of an SPI data set")
-		print("Patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
 		print("    -> Input: data (patterns, numpy.ndarray, shape=(Nd,Nx,Ny)) ")
 		return
 	return np.sum(data, axis=0)/float(len(data))

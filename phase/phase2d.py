@@ -32,7 +32,7 @@ def new_project(data_mask_path, path=None, name=None):
 		print("    -> Input: data_mask_path (list, [data_path, user_mask_path])")
 		print("     *option: path (create work directory at your give path, default as current dir)")
 		print("     *option: name (give a name to your project, default is an number)")
-		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat' or '.bin'")
+		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat' or '.bin', mask file must be 'npy'")
 		print("         Leave data_mask_path[1] to None if you don't have user mask")
 		print("[Notice] 'path' must be absolute path !")
 		return
@@ -127,9 +127,9 @@ def config(params):
 		config.write(f)
 	print('\n Configure finished.')
 
-def run(num_proc=1, nohup=False):
+def run(nohup=False):
 	global _workpath
-	if type(num_proc)!=int:
+	if type(nohup)!=bool:
 		print("Call this function to start phasing")
 		print("    -> Input: num_proc (int, how many processes to run in parallel, default=1)")
 		print("              nohup (bool, whether run it in the background, default=False)")
@@ -146,9 +146,9 @@ def run(num_proc=1, nohup=False):
 		cmd = "python " + os.path.join(code_path,'make_input.py') + ' '+ os.path.join(_workpath,'config.ini')
 	subprocess.check_call(cmd, shell=True)
 	if nohup == True:
-		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc) + ' &>' + os.path.join(_workpath, 'phase.log')+'&'
+		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' &>' + os.path.join(_workpath, 'phase.log') + '&'
 	else:
-		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc)
+		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
 	subprocess.check_call(cmd, shell=True)
 
 def show_result(outpath=None, exp_param=None):
@@ -157,7 +157,7 @@ def show_result(outpath=None, exp_param=None):
 		print("This function is used to plot phasing results in a figure")
 		print("    -> Input: ")
 		print("     *option: outpath (IF you move output.h5 to another folder, please give me its path)")
-		print("     *option: exp_param (list detd, lambda, det_size, pix_size in a string. Used to calculate q value.")
+		print("     *option: exp_param (list detd, lambda, det_r, pix_size in a string. Used to calculate q value.")
 		print("                         e.g. '200,2.5,128,0.3'. If you don't need q info, leave it as default (None))")
 		return
 	if outpath is not None and type(outpath)!=str:

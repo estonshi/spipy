@@ -1,9 +1,9 @@
 _workpath = None
-config_default = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
-					'parameters|detsize' : 128, 'parameters|pixsize' : 0.3, \
+config_essential = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
+					'parameters|detsize' : '128 128', 'parameters|pixsize' : 0.3, \
 					'parameters|stoprad' : 40, 'parameters|polarization' : 'x', \
 					'emc|num_div' : 10, 'emc|need_scaling' : 1, \
-					'emc|beta' : 0.006, 'emc|beta_schedule' : [1.414,10] }
+					'emc|beta' : 0.006, 'emc|beta_schedule' : '1.414 10' }
 config_optional = {'parameters|ewald_rad' : 'None', 'make_detector|in_mask_file' : 'None', \
 					'emc|sym_icosahedral' : 0, 'emc|selection' : 'None', \
 					'emc|start_model_file' : 'None'}
@@ -49,24 +49,24 @@ def new_project(data_path, inh5=None, path=None, name=None):
 	import h5py
 	code_path = __file__.split('/emc.py')[0] + '/template_emc'
 	if not os.path.exists(data_path):
-		raise ValueError("\nYour data path is incorrect. Try ABSOLUTE PATH. Exit\n")
+		raise ValueError("Your data path is incorrect. Try ABSOLUTE PATH. Exit\n")
 	else:
 		if inh5 is None:
-			raise ValueError("Give me patterns' path inside h5 file")
+			raise ValueError("Give me patterns' path inside h5 file\n")
 		else:
 			try:
 				tempf = h5py.File(data_path, 'r')
-				temp = f[inh5][0]
+				temp = tempf[inh5][0]
 				tempf.close()
 				temp.shape[0]
 				temp.shape[1]
 			except:
-				raise RuntimeError("Check your input data file. Some errors arise when I try to load data.")
+				raise RuntimeError("Check your input data file. Some errors arise when I try to load data.\n")
 	if path == None or path == "./":
 		path = os.path.abspath(sys.path[0])
 	else:
 		if not os.path.exists(path):
-			raise ValueError('\nYour path is incorrect. Try ABSOLUTE PATH. Exit\n')
+			raise ValueError('Your path is incorrect. Try ABSOLUTE PATH. Exit\n')
 		else:
 			path = os.path.abspath(path)
 	if name is not None:
@@ -87,7 +87,7 @@ def new_project(data_path, inh5=None, path=None, name=None):
 	config.read(os.path.join(_workpath, 'config.ini'))
 	config.set('make_detector', 'out_detector_file', os.path.join(_workpath, 'data/det_exp.dat'))
 	config.set('make_data', 'out_photons_file', os.path.join(_workpath, 'data/photons.emc'))
-	config.set('emc', 'out_folder', os.path.join(_workpath, 'data/'))
+	config.set('emc', 'output_folder', os.path.join(_workpath, 'data/'))
 	config.set('emc', 'log_file', os.path.join(_workpath, 'EMC.log'))
 	with open(os.path.join(_workpath, 'config.ini'), 'w') as f:
 		config.write(f)
@@ -114,13 +114,14 @@ def config(params):
 					... \n\
 					}")
 		print("You can look into 'Config' part of README document for detail information;")
-		print("or refer to 'emc.config_default' attribute for default values of neccessary parameters, ")
+		print("or refer to 'emc.config_essential' attribute for default values of neccessary parameters, ")
 		print("and 'emc.config_optional' attribute for default values of optional parameters.")
 		print("Help exit.")
 		return
 	
 	import os
 	import ConfigParser
+	import subprocess
 	if not os.path.exists(os.path.join(_workpath,'config.ini')):
 		raise RuntimeError("I can't find your configure file, please run emc.new_project(...) first !")
 	if type(params)!=dict:
@@ -129,6 +130,13 @@ def config(params):
 	if params == {}:
 		pass
 	else:
+		maskpath = params['make_detector|in_mask_file']
+		if maskpath!='None' and not os.path.exists(maskpath):
+			raise RuntimeError("I can't find your mask file. Check it please.")
+		else:
+			cmd = "cp " + os.path.abspath(maskpath) + " " + os.path.join(_workpath, "mask.byt")
+			subprocess.check_call(cmd, shell=True)
+			params['make_detector|in_mask_file'] = os.path.join(_workpath, "mask.byt")
 		config = ConfigParser.ConfigParser()
 		config.read(os.path.join(_workpath,'config.ini'))
 		for k in params.keys():
@@ -142,7 +150,7 @@ def config(params):
 	subprocess.check_call(cmd, shell=True)
 	print('\n Configure finished.')
 
-def run(num_proc, num_thread=None, iters=None, nohup=False, resume=False):
+def run(num_proc, num_thread=None, iters=None, nohup=True, resume=False, cluster=True):
 	global _workpath
 	if type(num_proc)==str and num_proc=="help":
 		print("Call this function to start phasing")
@@ -151,8 +159,9 @@ def run(num_proc, num_thread=None, iters=None, nohup=False, resume=False):
 		print("              iters (int, how many reconstruction iterations)")
 		print("       *option: nohup (bool, whether run in the background, default=False)")
 		print("       *option: resume (bool, whether run from previous break point, default=False)")
+		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True)")
 		print("[Notice] As this program costs a lot of memories, use as less processes and much threads as possible.\
-			Recommended strategy : num_proc * num_thread ~ number of cores in your CPUs. Let one cluster node support 2~4 processes.")
+			Recommended strategy : num_proc * num_thread ~ number of cores in your CPUs. Let one cluster node support 1~2 processes. (Mentioned, large processes number may cause low precision in merging result)")
 		return
 	import numpy as np
 	import os
@@ -170,13 +179,25 @@ def run(num_proc, num_thread=None, iters=None, nohup=False, resume=False):
 		raise ValueError("Please call emc.new_project(...) and emc.config(...) first ! Exit")
 
 	code_path = __file__.split('/emc.py')[0] + '/template_emc'
-	cmd = 'mpirun -np ' + str(num_proc) + ' ' + os.path.join(_workpath, 'emc') +\
-		 ' -c ' + os.path.join(_workpath, 'config.ini') + ' -t ' +  str(num_thread)
-	# check resume and nohup
-	if resume:
-		cmd = cmd + ' -r ' + str(iters)
-	else:
-		cmd = cmd + ' ' + str(iters)
-	if nohup:
-		cmd = cmd + ' &>' + os.path.join(_workpath, 'emc_details.log')+'&'
-	subprocess.call(cmd, shell=True)
+	if cluster:
+		print("\n Dry run on cluster, check submit_job.sh for details.\n")
+		cmd = 'mpirun -np ' + str(num_proc) + ' ./emc -c config.ini' + ' -t ' +  str(num_thread)
+		# check resume and nohup
+		if resume:
+			cmd = cmd + ' -r ' + str(iters)
+		else:
+			cmd = cmd + ' ' + str(iters)
+		submitfile = open(os.path.join(_workpath, "submit_job.sh"), 'w')
+		submitfile.write("#! /bin/bash\n\n")
+		submitfile.write("# Submit the command below to your job submitting system to run emc\n")
+		submitfile.write(cmd + '\n')
+		submitfile.close()
+	if not cluster:
+		cmd = os.path.join(_workpath, 'emc') + ' -c ' + os.path.join(_workpath, 'config.ini') + ' -t ' +  str(num_thread)
+		if resume:
+			cmd = cmd + ' -r ' + str(iters)
+		else:
+			cmd = cmd + ' ' + str(iters)
+		if nohup:
+			cmd = cmd + ' &>' + os.path.join(_workpath, "emc_details.log") + '&'
+		subprocess.check_call(cmd, shell=True)

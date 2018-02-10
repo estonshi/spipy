@@ -69,7 +69,7 @@ if __name__ == '__main__':
 	# write emc file
 	newfile = open(savepath,'wb')
 	num_ = np.zeros(256,dtype='i4')
-	num_[0] = num_data
+	num_[0] = len(exp)
 	num_[1] = image_size[0]*image_size[1]
 	num_.tofile(newfile)
 	one_photon_events.tofile(newfile)

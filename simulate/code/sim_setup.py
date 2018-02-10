@@ -36,6 +36,7 @@ if __name__ == "__main__":
     else:
         logging.info("Going with the default full workflow")
 
+    nowpath = os.path.abspath(__file__).split('/sim_setup.py')[0]
     # Sequentially step through the simulation workflow
     if not args.skip_densities:
         cmd = "./make_densities.py -c " + args.config_file + " -v"
@@ -60,3 +61,4 @@ if __name__ == "__main__":
         logging.info(20*"=" + "\n")
         logging.info(20*"=" + "\n" + cmd)
         subprocess.call(cmd, shell=True)
+

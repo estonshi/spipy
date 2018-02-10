@@ -29,7 +29,7 @@ now=`dirname $0`
 cp $now/config.ini $1/config.ini
 cp $now/autoplot.py $1/autoplot.py
 cp $now/frameviewer.py $1/frameviewer.py
-cp $now/mask_sample.byt $1/data/mask_sample.byt
+# cp $now/mask_sample.byt $1/data/mask_sample.byt
 
 echo " "
 echo "Successfully created work directory : $1"

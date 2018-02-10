@@ -2,6 +2,7 @@ import analyse
 import image
 import simulate
 import phase
+import merge
 
 def help():
 	import os

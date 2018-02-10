@@ -6,11 +6,11 @@ import numpy as np
 import ConfigParser
 import subprocess
 
-import phasing_3d.utils as utils
-from phasing_3d.utils import io_utils
-from phasing_3d.utils import zero_pad
-from phasing_3d.utils import circle
-from phasing_3d.utils import fitting
+import phasing3d.utils as utils
+from phasing3d.utils import io_utils
+from phasing3d.utils import zero_pad
+from phasing3d.utils import circle
+from phasing3d.utils import fitting
 
 if __name__ == "__main__":
     args = io_utils.parse_cmdline_args()

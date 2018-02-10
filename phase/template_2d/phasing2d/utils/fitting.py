@@ -113,6 +113,16 @@ def oneonr_subtract(diff, scale_gaus = 0.9, is_fft_shifted = True):
     diff[diff < 0.0] = 0.0
     return diff
 
+def gaussian_blur(diff, ksize=7, sigma=0):
+    try:
+        import cv2
+    except:
+        print('No opencv2 detected.')
+        import sys
+        sys.exit()
+    newdiff = cv2.GaussianBlur(diff,(ksize,ksize),sigma)
+    return newdiff
+
 if __name__ == '__main__':
     import h5py
     import numpy as np

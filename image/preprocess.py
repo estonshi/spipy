@@ -18,7 +18,7 @@ def fix_artifact(dataset, estimated_center=None, artifacts=None, mask=None):
 	import saxs
 	import radp
 
-	if not (estimated_center or artifacts):
+	if estimated_center is None or artifacts is None:
 		raise RuntimeError("no estimated_center or artifacts")
 	try:
 		dataset[0, artifacts[:,0], artifacts[:,1]]
@@ -72,7 +72,7 @@ def adu2photon(dataset, photon_percent=0.9, nproc=2, transfer=True, force_poisso
 		print("     *option: nproc ( number of processes running in parallel, default=2)")
 		print("     *option: transfer ( bool, Ture -> evaluate adu unit and transfer to photon, False -> just evlaute, default=True)")
 		print("     *option: force_poisson ( bool, whether to determine photon numbers at each pixel according to poisson distribution, default=False, ignored if transfer=False )")
-		print("    -> Return: adu (float) or [adu, data_photonCount] ( [float, int, numpy.ndarray(Nd,Nx,Ny)] )")
+		print("    -> Return: adu (float) or [adu, data_photonCount] ( [float, int numpy.ndarray(Nd,Nx,Ny)] )")
 		print("[Notice] This function is implemented with multi-processes. Nd is recommened to be >1k")
 		print("Help exit.")
 		return
@@ -128,7 +128,7 @@ def _transfer(data, photon_percent, adu, force_poisson):
 		sumc = np.cumsum(countp)
 		percentc = sumc/sumc[-1].astype(float)
 		adu_mine = np.where(np.abs(percentc-photon_percent)<0.01)[0][0]
-		real_adu = 0.7*adu_mine + 0.3*adu
+		real_adu = 0.6*adu_mine + 0.4*adu
 		if force_poisson:
 			newp = np.frompyfunc(poisson,1,1)
 			re[ind] = newp(pat/real_adu)

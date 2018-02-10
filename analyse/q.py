@@ -17,7 +17,7 @@ def cal_q(detd, lamda=None, det_r=None, pixsize=None):
 
 def cal_r(qlist, detd=None, lamda=None, det_r=None, pixsize=None):
 	import numpy as np
-	if type(tlist)!=np.ndarray:
+	if type(qlist)!=np.ndarray:
 		print("This function is inverse calculation of cal_q")
 		print("    -> Input : qlist (numpy.ndarray, shape=(Nr,))")
 		print("               detd (mm) , lamda (A), det_r (pixel), pixsize (mm)")

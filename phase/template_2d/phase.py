@@ -7,7 +7,6 @@ import phasing2d
 import phasing2d.utils as utils
 
 from mpi4py import MPI
-import multiprocessing as mp
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -84,30 +83,9 @@ def out_merge(out, I, good_pix):
     else :
         return None
     
-def phase_onetime(I, params0, alg_iters, d):
-    out = copy.deepcopy(d)
-    params = copy.deepcopy(params0)
-        
-    for alg, iters in alg_iters :
-            
-        if alg == 'ERA':
-            O, info = phasing2d.ERA(I, iters, **params['phasing_parameters'])
-             
-        if alg == 'DM':
-            O, info = phasing2d.DM(I,  iters, **params['phasing_parameters'])
-             
-        out['O']           = params['phasing_parameters']['O']          = O
-        out['eMod']       += info['eMod']
-        out['eCon']       += info['eCon']
-            
-        if 'background' in info.keys():
-            out['background']  = params['phasing_parameters']['background'] = info['background'] * good_pix
-            out['B_rav']       = info['r_av']
-    
-    out['support']     = params['phasing_parameters']['support']    = info['support']
-    return out
 
-def phase(I, support, params, good_pix = None, sample_known = None, num_processor = 1):
+
+def phase(I, support, params, good_pix = None, sample_known = None):
     d   = {'eMod' : [],         \
            'eCon' : [],         \
            'O'    : None,       \
@@ -134,16 +112,8 @@ def phase(I, support, params, good_pix = None, sample_known = None, num_processo
     params0 = copy.deepcopy(params)
     
     alg_iters = config_iters_to_alg_num(params['phasing']['iters'])
-    
+        
     # Repeats
-    pool = mp.Pool(processes = num_processor)
-    result = []
-    for j in range(params['phasing']['repeats']):
-        result.append(pool.apply_async(phase_onetime, args=(I,params0,alg_iters,d,)))
-    pool.close()
-    pool.join()
-    out = [p.get() for p in result]
-    """
     #---------------------------------------------
     for j in range(params['phasing']['repeats']):
         out.append(copy.deepcopy(d))
@@ -152,10 +122,10 @@ def phase(I, support, params, good_pix = None, sample_known = None, num_processo
         for alg, iters in alg_iters :
             
             if alg == 'ERA':
-               O, info = phasing_2d.ERA(I, iters, **params['phasing_parameters'])
+               O, info = phasing2d.ERA(I, iters, **params['phasing_parameters'])
              
             if alg == 'DM':
-               O, info = phasing_2d.DM(I,  iters, **params['phasing_parameters'])
+               O, info = phasing2d.DM(I,  iters, **params['phasing_parameters'])
              
             out[j]['O']           = params['phasing_parameters']['O']          = O
             out[j]['eMod']       += info['eMod']
@@ -166,7 +136,6 @@ def phase(I, support, params, good_pix = None, sample_known = None, num_processo
                 out[j]['B_rav']       = info['r_av']
     
         out[j]['support']     = params['phasing_parameters']['support']    = info['support']
-    """
     return out
 
 
@@ -178,7 +147,7 @@ if __name__ == "__main__":
     diff, support, good_pix, sample_known, params = utils.io_utils.read_input_h5(args.input)
 
     out = phase(diff, support, params, \
-                        good_pix = good_pix, sample_known = sample_known, num_processor = args.processor)
+                        good_pix = good_pix, sample_known = sample_known)
 
     out = out_merge(out, diff, good_pix)
     
@@ -187,4 +156,4 @@ if __name__ == "__main__":
         utils.io_utils.write_output_h5(params['output']['path'], diff, out['I'], support, out['support'], \
                                       good_pix, sample_known, out['O'], out['eMod'], out['eCon'], None,   \
                                       out['PRTF'], out['PRTF_rav'], out['PSD'], out['PSD_I'], out['B_rav'])
-        print("\nDone ! Phasing result is stored in " + params['output']['path'] + '/output.h5\n')
+

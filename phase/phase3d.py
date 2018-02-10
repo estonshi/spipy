@@ -111,12 +111,13 @@ def config(params):
 		config.write(f)
 	print('\n Configure finished.')
 
-def run(num_proc=1, nohup=False):
+def run(num_proc=1, nohup=False, cluster=True):
 	global _workpath
 	if type(num_proc)!=int:
 		print("Call this function to start phasing")
 		print("    -> *option: num_proc (int, how many processes to run in parallel, default=1)")
 		print("       *option: nohup (bool, whether run it in the background, default=False)")
+		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True))")
 		return
 	import os
 	import subprocess
@@ -133,7 +134,15 @@ def run(num_proc=1, nohup=False):
 		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc) + ' &>' + os.path.join(_workpath, 'phase.log')+'&'
 	else:
 		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc)
-	subprocess.check_call(cmd, shell=True)
+	if cluster:
+		print("\n Dry run on cluster, check submit_job.sh for details.\n")
+		submitfile = open(os.path.join(_workpath, "submit_job.sh"), 'w')
+		submitfile.write("#! /bin/bash\n\n")
+		submitfile.write("# Submit the command below to your job submitting system to run 3d phasing\n")
+		submitfile.write(cmd + '\n')
+		submitfile.close()
+	else:
+		subprocess.check_call(cmd, shell=True)
 
 def show_result(outpath=None, exp_param=None):
 	global _workpath

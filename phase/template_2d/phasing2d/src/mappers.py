@@ -122,8 +122,8 @@ class Mapper():
     
         # define the support projection
         # -----------------------------
-        if isValid('voxel_number', args) :
-            self.voxel_number = args['voxel_number']
+        if isValid('support_size', args) :
+            self.voxel_number = args['support_size']
         else :
             self.voxel_number = False
             self.S    = args['support']

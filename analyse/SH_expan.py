@@ -28,7 +28,7 @@ class _sphere_des():
 		try:
 			self.data = dataset['volume']
 			self.mask = dataset['mask']
-			if self.mask:
+			if self.mask is not None:
 				self.data = self.data * self.mask
 		except:
 			print("\nInput dataset format : ")
@@ -39,10 +39,16 @@ class _sphere_des():
 		self.data_center = (self.data.shape[0]/2,self.data.shape[1]/2,self.data.shape[2]/2)
 		self.dsize = self.data.shape
 		self.rmax = min(self.dsize) - max(self.data_center)
+	
+	def _cal_one_point(self, pointx, pointy, pointz, m, l):
+		theta,phi = self.orientation._xyz2ang([pointx, pointy, pointz], self.data_center)
+		sh = self.sph_harm(m,l,theta,phi)
+		return sh.conjugate()
 
 	def compute(self, L, r):
 		self.L = L
 		self.r = r
+		cal = self.np.frompyfunc(self._cal_one_point, 5, 1)
 		# compute shells [shell1,shell2,...], shell1=np.array([[x1,y1],[x2,y2],...])
 		shell = self.radp.shells_3d([self.r], self.dsize, self.data_center)[0]
 		# compute sh
@@ -51,10 +57,8 @@ class _sphere_des():
 		sh_conj = self.np.zeros((self.L, self.L*2+1, len(shell)),dtype=self.np.complex)
 		for l in self.np.arange(self.L):
 			for m in self.np.arange(-l,l+1,1):
-				for ind,point in enumerate(shell):
-					theta,phi = self.orientation._xyz2ang(point, self.data_center)
-					sh = self.sph_harm(m,l,theta,phi)
-					sh_conj[l,m,ind] = sh.conjugate()
+				sh = cal(shell[:,0], shell[:,1], shell[:,2], [m]*len(shell), [l]*len(shell))
+				sh_conj[l,m,:] = sh
 				self.sys.stdout.write("Processing... " + "l=" + str(l) + ", m=" + str(m)\
 				+ ", r=" + str(r) + " \r")
 				self.sys.stdout.flush()
@@ -66,16 +70,17 @@ class _sphere_des():
 		print("\ndone.\n")
 		return self.Cl
 
-def sp_hamonics(data, L=20, r=40):
+def sp_hamonics(data, r=40, L=10):
 	import numpy as np
-	if type(data)!=dict:
+	if type(data)==str and data=="help":
 		print("This function is used to calculate spherical harmonics of a volume")
-		print("    -> Input: data (input dataset, dict, {'volume':[...], 'mask':[...]})")
-		print("              L (int, level of hamonics, default is 20)")
+		print("    -> Input: data (input dataset, dict, {'volume':[...], 'mask':[...]}), set 'mask' as None if data doesn't need a mask")
 		print("              r (int/float, radius of the shell you want to expand, in pixels)")
+		print("     *option: L (int, level of hamonics, default is 10)")
 		print("    -> Return: shdes (numpy.ndarray, shape=(L,))")
+		print("[Notice] The volume/mask inside data should be 3-dimensional matrix")
 		return
 	calculator = _sphere_des()
 	calculator.load_data(data)
-	shdes = calculator.compute(L,r)
+	shdes = calculator.compute(L+1,r)
 	return shdes
