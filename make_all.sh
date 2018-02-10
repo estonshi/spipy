@@ -1,9 +1,29 @@
 #! /bin/bash
 set -e
+root_folder=`pwd`
+
+# check whether there is anaconda installed
+Ana_path=`which python`
+a='anaconda'
+if [[ $Ana_path =~ $a ]]
+then
+	echo "Root folder is $root_folder"
+else
+	echo "Use anaconda2 please. Exit."
+	exit 1
+fi
+py_version=`conda info | grep python`
+a='2.7'
+if [[ $py_version =~ $a ]]
+then
+	echo "Anaconda version authorized"
+else
+	echo "Use anaconda2 please. Exit."
+	exit 1
+fi
 
 # decide your system
 sys=`uname`
-root_folder=`pwd`
 
 if [ $sys != "Linux" ] && [ $sys != "Darwin" ]
 then
@@ -61,5 +81,8 @@ fi
 echo "==> others"
 cd $root_folder/phase
 chmod u+x ./template_2d/new_project ./template_3d/new_project
+
+# make soft link
+ln -fs $root_folder ${Ana_path%/bin/python*}/lib/python2.7/site-packages/spipy
 
 echo "Complete!"
