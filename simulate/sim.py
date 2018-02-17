@@ -19,7 +19,7 @@ def generate_config_files(pdb_file, workpath = None, name=None, params = {}):
         print("This function is used to configure simulation parameters")
         print("    -> Input: pdb_file (Path of your pdb file used in simulation [/..../xx.pdb])")
         print("     *option: workpath (Choose your work directory, ABSOLUTE PATH !, default is current dir)")
-	print("     *option: name (give your project a name, default is None, program will choose a name for you)")
+        print("     *option: name (give your project a name, default is None, program will choose a name for you)")
         print("     *option: params (A dict, {'section_1|param_1': value_1, ...})\n")
         print("[Notice] Give 'workdir' parameter a None value to use current directory")
         print("[Notice] If your 'params' is a empty dict, a default config file will be generated : ")

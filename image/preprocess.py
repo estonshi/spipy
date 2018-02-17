@@ -3,7 +3,7 @@ def _detect_artifact():
 
 def fix_artifact(dataset, estimated_center=None, artifacts=None, mask=None):
 	if type(dataset)==str and dataset=="help":
-		print("This function reduces artifacts of an adu dataset, whose patterns have the same artifacts")
+		print("This function reduces artifacts of an adu dataset, whose patterns share the same artifacts")
 		print("    -> Input: dataset (FLOAT adu patterns, numpy.ndarray, shape=(Nd,Nx,Ny))")
 		print("              estimated_center (estimated pattern center, (Cx,Cy))")
 		print("              artifacts (artifact location in pattern, numpy.ndarray, shape=(Na,2))")
@@ -67,10 +67,10 @@ def fix_artifact(dataset, estimated_center=None, artifacts=None, mask=None):
 def adu2photon(dataset, photon_percent=0.9, nproc=2, transfer=True, force_poisson=False):
 	if type(dataset)==str and dataset=="help":
 		print("This function is used to evaluate adu value per photon and transfer adu to photon")
-		print("    -> Input: dataset ( patterns whith adu values, numpy.ndarray, shape=(Nd,Nx,Ny) )")
+		print("    -> Input: dataset ( patterns of adu values, numpy.ndarray, shape=(Nd,Nx,Ny) )")
 		print("     *option: photon_percent ( estimated percent of pixels that has photons, default=0.1)")
 		print("     *option: nproc ( number of processes running in parallel, default=2)")
-		print("     *option: transfer ( bool, Ture -> evaluate adu unit and transfer to photon, False -> just evlaute, default=True)")
+		print("     *option: transfer ( bool, Ture -> evaluate adu unit and transfer to photon, False -> just evaluate, default=True)")
 		print("     *option: force_poisson ( bool, whether to determine photon numbers at each pixel according to poisson distribution, default=False, ignored if transfer=False )")
 		print("    -> Return: adu (float) or [adu, data_photonCount] ( [float, int numpy.ndarray(Nd,Nx,Ny)] )")
 		print("[Notice] This function is implemented with multi-processes. Nd is recommened to be >1k")

@@ -91,7 +91,7 @@ def cluster_fTSNE(dataset, low_filter=0.3, no_dims=2, perplexity=50, use_pca=Tru
 		print("      option (TSNE): initial_dims (+int, output dimensions of inititate PCA, ignored if use_pca=False, default=50)")
 		print("      option (TSNE): max_iter (+int, max iterations, default=1000, suggested >500)")
 		print("      option (TSNE): theta (0~1 float, the speed vs accuracy trade-off parameter, theta=1 means highest speed, default=0.5)")
-		print("      option (TSNE): randseed (int, >=0 use 'randseed' as initiate value's generating seed, <0 use current as random seed, default=-1)")
+		print("      option (TSNE): randseed (int, >=0 use 'randseed' as initiate value's generating seed, <0 use current time as random seed, default=-1)")
 		print("      option (TSNE): verbose (default=False)")
 		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
 		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\

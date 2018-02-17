@@ -4,7 +4,7 @@ config_essential = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
 					'parameters|stoprad' : 40, 'parameters|polarization' : 'x', \
 					'emc|num_div' : 10, 'emc|need_scaling' : 1, \
 					'emc|beta' : 0.006, 'emc|beta_schedule' : '1.414 10' }
-config_optional = {'parameters|ewald_rad' : 'None', 'make_detector|in_mask_file' : 'None', \
+config_advanced = {'parameters|ewald_rad' : 'None', 'make_detector|in_mask_file' : 'None', \
 					'emc|sym_icosahedral' : 0, 'emc|selection' : 'None', \
 					'emc|start_model_file' : 'None'}
 
@@ -41,7 +41,6 @@ def new_project(data_path, inh5=None, path=None, name=None):
 		print("              inh5 (path of patterns inside h5 file, patterns should be stored in a numpy.ndarray, shape=(Nd,Nx,Ny))")
 		print("     *option: path (create work directory at your give path, default as current dir)")
 		print("     *option: name (give a name to your project, default is an number)")
-		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat', or Dragonfly output '.bin'")
 		print("[Notice] 'path' must be absolute path !")
 		return
 	import subprocess
@@ -115,7 +114,7 @@ def config(params):
 					}")
 		print("You can look into 'Config' part of README document for detail information;")
 		print("or refer to 'emc.config_essential' attribute for default values of neccessary parameters, ")
-		print("and 'emc.config_optional' attribute for default values of optional parameters.")
+		print("and 'emc.config_advanced' attribute for default values of optional parameters.")
 		print("Help exit.")
 		return
 	
@@ -153,7 +152,7 @@ def config(params):
 def run(num_proc, num_thread=None, iters=None, nohup=True, resume=False, cluster=True):
 	global _workpath
 	if type(num_proc)==str and num_proc=="help":
-		print("Call this function to start phasing")
+		print("Call this function to start emc")
 		print("    -> Input: num_proc (int, how many processes to run in parallel)")
 		print("              num_thread (int, how many threads in each process) ")
 		print("              iters (int, how many reconstruction iterations)")

@@ -32,7 +32,7 @@ def new_project(data_mask_path, path=None, name=None):
 		print("    -> Input: data_mask_path (list, [data_path, user_mask_path])")
 		print("     *option: path (create work directory at your give path, default as current dir)")
 		print("     *option: name (give a name to your project, default is an number)")
-		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat' or '.bin', mask file must be 'npy'")
+		print("[Notice] Your original intensity file should be 2D matrix '.npy' or '.mat' or '.bin', mask file must be 'npy'")
 		print("         Leave data_mask_path[1] to None if you don't have user mask")
 		print("[Notice] 'path' must be absolute path !")
 		return
@@ -131,8 +131,7 @@ def run(nohup=False):
 	global _workpath
 	if type(nohup)!=bool:
 		print("Call this function to start phasing")
-		print("    -> Input: num_proc (int, how many processes to run in parallel, default=1)")
-		print("              nohup (bool, whether run it in the background, default=False)")
+		print("    -> Input: nohup (bool, whether run it in the background, default=False)")
 		return
 	import os
 	import subprocess
@@ -151,7 +150,7 @@ def run(nohup=False):
 		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
 	subprocess.check_call(cmd, shell=True)
 
-def show_result(outpath=None, exp_param=None):
+def show_result(outpath=None, exp_param=None):p
 	global _workpath
 	if type(outpath)==str and outpath == "help":
 		print("This function is used to plot phasing results in a figure")

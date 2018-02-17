@@ -77,7 +77,7 @@ def inten_profile_vaccurate(dataset, *exp_param):
 
 def inten_profile_vfast(dataset, *exp_param):
 	import numpy as np
-	if type(file_h5)!=str or file_h5 == 'help':
+	if type(dataset)==str and dataset == 'help':
 		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
 		print("The patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
@@ -86,9 +86,9 @@ def inten_profile_vfast(dataset, *exp_param):
 	import sys
 	sys.path.append(__file__.split('/analyse/saxs.py')[0]+'/image/')
 	import q
-	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
-	if not qinfo:
+	if len(exp_param)<4:
 		raise ValueError("Please be sure to give all exp_param ! Exit")
+	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
 	import h5py
 	saxs = cal_saxs(dataset)
 	center = frediel_search(saxs, [saxs.shape[0]/2, saxs.shape[1]/2])
