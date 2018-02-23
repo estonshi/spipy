@@ -58,7 +58,7 @@ chmod u+x compile.sh ../new_project
 if [ $sys = "Linux" ]
 then
 	mpicc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_LINUX -I ./ -lgsl -lgslcblas -lm -O3
-	chmod u+x emc_MAC
+	chmod u+x emc_LINUX
 elif [ $sys = "Darwin" ]
 then
 	$mygcc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_MAC -I ./ -lgsl -lgslcblas -lm -O3 -lmpi
