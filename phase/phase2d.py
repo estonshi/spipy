@@ -150,7 +150,7 @@ def run(nohup=False):
 		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
 	subprocess.check_call(cmd, shell=True)
 
-def show_result(outpath=None, exp_param=None):p
+def show_result(outpath=None, exp_param=None):
 	global _workpath
 	if type(outpath)==str and outpath == "help":
 		print("This function is used to plot phasing results in a figure")
