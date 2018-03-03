@@ -12,4 +12,7 @@ def help():
 			continue
 		else:
 			print("    |- " + f)
-			eval(f).help()
+			try:
+				eval(f).help()
+			except:
+				pass
