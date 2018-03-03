@@ -51,7 +51,7 @@ def shells_2d(rads, data_shape=None, center=None):
 
 def shells_3d(rads, data_shape=None, center=None):
 	import numpy as np
-	if rads=="help":
+	if type(rads)==str and rads=="help":
 		print("This function returns indices in a pattern which forms a shell when radius=rads")
 		print("    -> Input: rads (int/float list, a set of radius in pixels)")
 		print("              data_shape (int turple, (sizex, sizey, sizez))")
