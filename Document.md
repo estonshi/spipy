@@ -216,7 +216,7 @@ python test_classify.py   #some scripts need command line parameters
 
 + :numpy.3darray = rot_ext (ea:list/nump.1darray, order:str, matrix:numpy.3darray, #ref:numpy.3darray/None)
 
-+ :(float, list, numpy.3darray) = run_grid_search (fix:numpy.3darray, mov:numpy.3darray, #grid_unit:list/[0.3,0.1], #nproc:int/2, #resize:int/40, #order:str/'zxz')
++ :(float, list, numpy.3darray) = align (fix:numpy.3darray, mov:numpy.3darray, #grid_unit:list/[0.3,0.1], #nproc:int/2, #resize:int/40, #order:str/'zxz')
 ```
 --
 * **eul2rotm : transfer euler angles to rotation matrix in intrinsic order**, return 3x3 rotation matrix
