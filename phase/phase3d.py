@@ -1,13 +1,53 @@
+import os
+import sys
+import numpy as np
+import ConfigParser
+import subprocess
+
 _workpath = None
 
-def use_project(project_path):
-	global _workpath
-	if type(project_path)!=str or project_path=="help":
+def help(module):
+	if module=="use_project":
 		print("This function is used to switch to a existing project")
 		print("    -> Input: project_path ( str, the project directory you want to switch to)")
 		return
-	import os
-	import sys
+	elif module=="new_project":
+		print("This function is used to create a new project directory at your given path")
+		print("    -> Input: data_path (path of your original intensity data)")
+		print("     *option: path (create work directory at your give path, default as current dir)")
+		print("     *option: name (give a name to your project, default is an number)")
+		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat', or Dragonfly output '.bin'")
+		print("[Notice] 'path' must be absolute path !")
+		return
+	elif module=="config":
+		print("This function is used to edit configure file")
+		print("    -> Input (dict, parameters yout want to modified.)")
+		print("params format : ")
+		print("    {\n\
+					'input|shape' : '120,120,120', \n\
+					'input|padd_to_pow2' : 'True', \n\
+					... \n\
+					}")
+		print("You can look into 'config.ini' for detail information")
+		return
+	elif module=="run":
+		print("Call this function to start phasing")
+		print("    -> *option: num_proc (int, how many processes to run in parallel, default=1)")
+		print("       *option: nohup (bool, whether run it in the background, default=False)")
+		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True))")
+		return
+	elif module=="show_result":
+		print("This function is used to plot phasing results in a figure")
+		print("    -> Input: ")
+		print("     *option: outpath (IF you move output.h5 to another folder, please give me its path)")
+		print("     *option: exp_param (list detd, lambda, det_size, pix_size in a string. Used to calculate q value.")
+		print("                         e.g. '200,2.5,128,0.3'. If you don't need q info, leave it as default (None))")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
+def use_project(project_path):
+	global _workpath
 	temp = None
 	if project_path[0] == '/' or project_path[0:2] == '~/':
 		temp = os.path.abspath(project_path)
@@ -25,18 +65,7 @@ def use_project(project_path):
 
 def new_project(data_path, path=None, name=None):
 	global _workpath
-	import sys
-	import os
-	if type(data_path)!=str or data_path == "help":
-		print("This function is used to create a new project directory at your given path")
-		print("    -> Input: data_path (path of your original intensity data)")
-		print("     *option: path (create work directory at your give path, default as current dir)")
-		print("     *option: name (give a name to your project, default is an number)")
-		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat', or Dragonfly output '.bin'")
-		print("[Notice] 'path' must be absolute path !")
-		return
-	import subprocess
-	import numpy as np
+
 	code_path = __file__.split('/phase3d.py')[0]
 	if not os.path.exists(data_path):
 		raise ValueError("\nYour data path is incorrect. Try ABSOLUTE PATH. Exit\n")
@@ -60,7 +89,6 @@ def new_project(data_path, path=None, name=None):
 	cmd = code_path + '/template_3d/new_project ' + _workpath
 	subprocess.check_call(cmd, shell=True)
 	# now change output|path in config.ini
-	import ConfigParser
 	config = ConfigParser.ConfigParser()
 	config.read(os.path.join(_workpath, 'config.ini'))
 	config.set('output', 'path', _workpath)
@@ -87,21 +115,9 @@ def new_project(data_path, path=None, name=None):
 
 def config(params):
 	global _workpath
-	if params == {} or type(params)!=dict:
-		print("This function is used to edit configure file")
-		print("    -> Input (dict, parameters yout want to modified.)")
-		print("params format : ")
-		print("    {\n\
-					'input|shape' : '120,120,120', \n\
-					'input|padd_to_pow2' : 'True', \n\
-					... \n\
-					}")
-		print("You can look into 'config.ini' for detail information")
-		return
-	import os
 	if not os.path.exists(os.path.join(_workpath,'config.ini')):
 		raise ValueError("I can't find your configure file, please run phase3d.new_project(...) first !")
-	import ConfigParser
+
 	config = ConfigParser.ConfigParser()
 	config.read(os.path.join(_workpath,'config.ini'))
 	for k in params.keys():
@@ -113,17 +129,9 @@ def config(params):
 
 def run(num_proc=1, nohup=False, cluster=True):
 	global _workpath
-	if type(num_proc)!=int:
-		print("Call this function to start phasing")
-		print("    -> *option: num_proc (int, how many processes to run in parallel, default=1)")
-		print("       *option: nohup (bool, whether run it in the background, default=False)")
-		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True))")
-		return
-	import os
-	import subprocess
 	if not os.path.exists(os.path.join(_workpath,'config.ini')):
 		raise ValueError("Please call phase3d.new_project(...) and phase3d.config(...) first ! Exit")
-	import sys
+
 	code_path = __file__.split('/phase3d.py')[0] + '/template_3d'
 	if nohup == True:
 		cmd = "python " + os.path.join(code_path,'make_input.py') + ' '+ os.path.join(_workpath,'config.ini') + ' >' + os.path.join(_workpath,'make_input.log')
@@ -146,18 +154,9 @@ def run(num_proc=1, nohup=False, cluster=True):
 
 def show_result(outpath=None, exp_param=None):
 	global _workpath
-	if type(outpath)==str and outpath == "help":
-		print("This function is used to plot phasing results in a figure")
-		print("    -> Input: ")
-		print("     *option: outpath (IF you move output.h5 to another folder, please give me its path)")
-		print("     *option: exp_param (list detd, lambda, det_size, pix_size in a string. Used to calculate q value.")
-		print("                         e.g. '200,2.5,128,0.3'. If you don't need q info, leave it as default (None))")
-		return
 	if outpath is not None and type(outpath)!=str:
 		raise ValueError("Input 'outpath should be a string. Exit'")
-	import sys
-	import os
-	import subprocess
+
 	code_path = __file__.split('/phase3d.py')[0] + '/template_3d'
 
 	if outpath is None:

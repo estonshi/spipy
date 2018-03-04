@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+import numpy as np
+import os
+import subprocess
+import argparse
+import logging
+import ConfigParser
+import sys
 
 work_dir = None
 config_default = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
@@ -6,16 +13,9 @@ config_default = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
                   'parameters|stoprad' : 0, 'parameters|polarization' : 'x', \
                   'make_data|num_data' : 100, 'make_data|fluence' : 1e14}
 
-def generate_config_files(pdb_file, workpath = None, name=None, params = {}):
-    import numpy as np
-    import os
-    import subprocess
-    import argparse
-    import logging
-    import ConfigParser
-    import sys
-    global work_dir
-    if type(pdb_file)==str and pdb_file=="help":
+def help(module):
+    global config_default
+    if module=="generate_config_files":
         print("This function is used to configure simulation parameters")
         print("    -> Input: pdb_file (Path of your pdb file used in simulation [/..../xx.pdb])")
         print("     *option: workpath (Choose your work directory, ABSOLUTE PATH !, default is current dir)")
@@ -34,6 +34,15 @@ def generate_config_files(pdb_file, workpath = None, name=None, params = {}):
         print("'make_data|num_data' : how many patterns do you want to generate")
         print("'make_data|fluence' : laser fluence [unit : photons/mm^2] (usually 1e10 ~ 1e14 is reasonable for most proteins)")
         return
+    elif module=="run_simulation":
+        print("This function is used to start simulation")
+        print("    -> No input required")
+        return
+    else:
+        raise ValueError("No module names "+str(module))
+
+def generate_config_files(pdb_file, workpath = None, name=None, params = {}):
+    global work_dir
     if not os.path.exists(pdb_file):
         print("Error!\nGive me a valid pdb file.\nExit.")
         return
@@ -99,22 +108,10 @@ def generate_config_files(pdb_file, workpath = None, name=None, params = {}):
     subprocess.check_call(work_dir + '/src/compile.sh', shell=True)
 
 def run_simulation(help = None):
-    import numpy as np
-    import os
-    import subprocess
-    import argparse
-    import logging
-    import ConfigParser
-    import sys
     global work_dir
-    if help:
-        print("This function is used to start simulation")
-        print("    -> No input required")
-        return
     if work_dir is None:
         print("Please run 'sim.generate_config_files(pdb_file, workdir = None, name=None, params = {})' first !")
-        return
-    
+        return   
     os.chdir(work_dir)
 
     config = ConfigParser.ConfigParser()
@@ -126,9 +123,13 @@ def run_simulation(help = None):
     cmd = 'python ' + os.path.join(work_dir,'py_src/read_emc.py') + ' ' + save_pdb + ' ' + pat_num
     subprocess.call(cmd, shell=True)
     # delete tmp file
-    cmd = 'rm ' + os.path.join(work_dir,'data/densityMap.bin') + ' ' + os.path.join(work_dir,'data/det_sim.dat')\
+    cmd = 'rm -rf ' + os.path.join(work_dir,'data/densityMap.bin') + ' ' + os.path.join(work_dir,'data/det_sim.dat')\
         + ' ' + os.path.join(work_dir,'data/intensities.bin') + ' ' + os.path.join(work_dir,'data/photons.emc')\
-        + ' ' + os.path.join(work_dir,'data/quaternion_buffer')
+        + ' ' + os.path.join(work_dir,'data/quaternion_buffer') + ' ' + os.path.join(work_dir,'aux/henke_table')\
+        + ' ' + os.path.join(work_dir,'make_data') + ' ' + os.path.join(work_dir,'make_densities.py')\
+        + ' ' + os.path.join(work_dir,'make_detector.py') + ' ' + os.path.join(work_dir,'make_intensities.py')\
+        + ' ' + os.path.join(work_dir,'py_src') + ' ' + os.path.join(work_dir,'sim_setup.py')\
+        + ' ' + os.path.join(work_dir,'src')
     subprocess.check_call(cmd, shell=True)
 
     print("\n== Complete ! ==")

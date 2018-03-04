@@ -1,7 +1,38 @@
+import sys
+import numpy as np
+sys.path.append(__file__.split("/image/preprocess.py")[0] + "/analyse")
+import saxs
+import radp
+
+def help(module):
+	if module=="fix_artifact":
+		print("This function reduces artifacts of an adu dataset, whose patterns share the same artifacts")
+		print("    -> Input: dataset (FLOAT adu patterns, numpy.ndarray, shape=(Nd,Nx,Ny))")
+		print("              estimated_center (estimated pattern center, (Cx,Cy))")
+		print("              artifacts (artifact location in pattern, numpy.ndarray, shape=(Na,2))")
+		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
+		print("    -> Return: None (To save RAM, your input dataset is modified directly)")
+		print("[Notice] This function cannot reduce backgroud noise, try preprocess.adu2photon instead")
+		print("Help exit.")
+		return
+	elif module=="adu2photon":
+		print("This function is used to evaluate adu value per photon and transfer adu to photon")
+		print("    -> Input: dataset ( patterns of adu values, numpy.ndarray, shape=(Nd,Nx,Ny) )")
+		print("     *option: photon_percent ( estimated percent of pixels that has photons, default=0.1)")
+		print("     *option: nproc ( number of processes running in parallel, default=2)")
+		print("     *option: transfer ( bool, Ture -> evaluate adu unit and transfer to photon, False -> just evaluate, default=True)")
+		print("     *option: force_poisson ( bool, whether to determine photon numbers at each pixel according to poisson distribution, default=False, ignored if transfer=False )")
+		print("    -> Return: adu (float) or [adu, data_photonCount] ( [float, int numpy.ndarray(Nd,Nx,Ny)] )")
+		print("[Notice] This function is implemented with multi-processes. Nd is recommened to be >1k")
+		print("Help exit.")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
 def _detect_artifact():
 	pass
 
-def fix_artifact(dataset, estimated_center=None, artifacts=None, mask=None):
+def fix_artifact(dataset, estimated_center, artifacts, mask=None):
 	if type(dataset)==str and dataset=="help":
 		print("This function reduces artifacts of an adu dataset, whose patterns share the same artifacts")
 		print("    -> Input: dataset (FLOAT adu patterns, numpy.ndarray, shape=(Nd,Nx,Ny))")
@@ -12,11 +43,6 @@ def fix_artifact(dataset, estimated_center=None, artifacts=None, mask=None):
 		print("[Notice] This function cannot reduce backgroud noise, try preprocess.adu2photon instead")
 		print("Help exit.")
 		return
-	import sys
-	import numpy as np
-	sys.path.append(__file__.split("/image/preprocess.py")[0] + "/analyse")
-	import saxs
-	import radp
 
 	if estimated_center is None or artifacts is None:
 		raise RuntimeError("no estimated_center or artifacts")
@@ -76,10 +102,6 @@ def adu2photon(dataset, photon_percent=0.9, nproc=2, transfer=True, force_poisso
 		print("[Notice] This function is implemented with multi-processes. Nd is recommened to be >1k")
 		print("Help exit.")
 		return
-	import sys
-	import numpy as np
-	sys.path.append(__file__.split("/image/preprocess.py")[0] + "/analyse")
-	import saxs
 
 	print("\nEvaluating adu units ...")
 	dataset[np.where(dataset<0)] = 0
@@ -115,7 +137,6 @@ def adu2photon(dataset, photon_percent=0.9, nproc=2, transfer=True, force_poisso
 		return adu
 
 def _transfer(data, photon_percent, adu, force_poisson):
-	import numpy as np
 
 	def poisson(lamb):
 		return np.random.poisson(lamb,1)[0]

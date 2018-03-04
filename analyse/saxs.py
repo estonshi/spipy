@@ -1,10 +1,37 @@
-# generate grid from input pattern's shape
-def grid(input_patt):
-	import numpy as np
-	if type(input_patt)!=np.ndarray:
+import numpy as np
+
+def help(module):
+	if module=="grid":
 		print("This finction is used to calculate grid of a pattern")
 		print("    -> Input: input_patt (numpy.ndarray, shape = (Nx,Ny))")
 		return
+	elif module=="frediel_search":
+		print("This function is used to find the zeros frequency point of an SPI pattern")
+		print("    -> Input: pattern (none negative numpy.ndarray, shape=(Nx, Ny))")
+		print("              estimated_center (estimated center of the pattern : (Cx, Cy))")
+		return
+	elif module=="inten_profile_vaccurate":
+		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
+		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
+		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
+		print("[Notice] We don't recommend you to use this function as it is very slow. Use 'inten_profile_vfast' instead.")
+		return
+	elif module=="inten_profile_vfast":
+		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
+		print("The patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
+		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
+		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
+		return
+	elif module=="cal_saxs":
+		print("This finction is used to calculate the saxs pattern of an SPI data set")
+		print("    -> Input: data (patterns, numpy.ndarray, shape=(Nd,Nx,Ny)) ")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
+
+# generate grid from input pattern's shape
+def grid(input_patt):	
 	size = input_patt.shape
 	if len(size)==2:
 		return np.mgrid[0:size[0],0:size[1]]
@@ -14,13 +41,7 @@ def grid(input_patt):
 		return
 
 # frediel search of SPI pattern to find center
-def frediel_search(pattern, estimated_center=None):
-	import numpy as np
-	if type(pattern)!=np.ndarray:
-		print("This function is used to find the zeros frequency point of an SPI pattern")
-		print("    -> Input: pattern (none negative numpy.ndarray, shape=(Nx, Ny))")
-		print("              estimated_center (estimated center of the pattern : (Cx, Cy))")
-		return
+def frediel_search(pattern, estimated_center):
 	size = np.array(pattern.shape)
 	search_z = [max(size[0]/20, 6), max(size[1]/20, 6)]
 	search_zone = np.mgrid[estimated_center[0]-search_z[0]/2:estimated_center[0]+search_z[0]/2,\
@@ -40,13 +61,6 @@ def frediel_search(pattern, estimated_center=None):
 
 # calculate accumulate intensity profile of SPI patterns
 def inten_profile_vaccurate(dataset, *exp_param):
-	import numpy as np
-	if type(dataset)!=str or dataset == 'help':
-		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
-		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
-		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
-		print("[Notice] We don't recommend you to use this function as it is very slow. Use 'inten_profile_vfast' instead.")
-		return
 	import h5py
 	import sys
 	sys.path.append(__file__.split('/analyse/saxs.py')[0]+'/image/')
@@ -76,13 +90,6 @@ def inten_profile_vaccurate(dataset, *exp_param):
 	return np.vstack((qinfo,final[:len(qinfo)])).T
 
 def inten_profile_vfast(dataset, *exp_param):
-	import numpy as np
-	if type(dataset)==str and dataset == 'help':
-		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
-		print("The patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
-		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
-		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
-		return
 	import sys
 	sys.path.append(__file__.split('/analyse/saxs.py')[0]+'/image/')
 	import q
@@ -101,9 +108,4 @@ def inten_profile_vfast(dataset, *exp_param):
 
 # calculate the saxs pattern of an SPI data set
 def cal_saxs(data):
-	import numpy as np
-	if type(data)!=np.ndarray:
-		print("This finction is used to calculate the saxs pattern of an SPI data set")
-		print("    -> Input: data (patterns, numpy.ndarray, shape=(Nd,Nx,Ny)) ")
-		return
 	return np.sum(data, axis=0)/float(len(data))

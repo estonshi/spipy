@@ -1,3 +1,7 @@
+import os
+import sys
+import numpy as np
+
 _workpath = None
 config_essential = {'parameters|detd' : 200, 'parameters|lambda' : 2.5, \
 					'parameters|detsize' : '128 128', 'parameters|pixsize' : 0.3, \
@@ -8,14 +12,50 @@ config_advanced = {'parameters|ewald_rad' : 'None', 'make_detector|in_mask_file'
 					'emc|sym_icosahedral' : 0, 'emc|selection' : 'None', \
 					'emc|start_model_file' : 'None'}
 
-def use_project(project_path):
-	global _workpath
-	if type(project_path)!=str or project_path=="help":
+def help(module):
+	if module=="use_project":
 		print("This function is used to switch to a existing project")
 		print("    -> Input: project_path ( str, the project directory you want to switch to)")
 		return
-	import os
-	import sys
+	elif module=="new_project":
+		print("This function is used to create a new project directory at your given path")
+		print("    -> Input: data_path (path of your patterns, MUST be h5 file)")
+		print("              inh5 (path of patterns inside h5 file, patterns should be stored in a numpy.ndarray, shape=(Nd,Nx,Ny))")
+		print("     *option: path (create work directory at your give path, default as current dir)")
+		print("     *option: name (give a name to your project, default is an number)")
+		print("[Notice] 'path' must be absolute path !")
+		return
+	elif module=="config":
+		print("This function is used to edit configure file")
+		print("    -> Input (dict, parameters yout want to modified.)")
+		print("params format : ")
+		print("    {\n\
+					'parameters|detd' : 200, \n\
+					'emc|num_div' : 10, \n\
+					... \n\
+					}")
+		print("You can look into 'Config' part of README document for detail information;")
+		print("or refer to 'emc.config_essential' attribute for default values of neccessary parameters, ")
+		print("and 'emc.config_advanced' attribute for default values of optional parameters.")
+		print("Help exit.")
+		return
+	elif module=="run":
+		print("Call this function to start emc")
+		print("    -> Input: num_proc (int, how many processes to run in parallel)")
+		print("              num_thread (int, how many threads in each process) ")
+		print("              iters (int, how many reconstruction iterations)")
+		print("       *option: nohup (bool, whether run in the background, default=False)")
+		print("       *option: resume (bool, whether run from previous break point, default=False)")
+		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True)")
+		print("[Notice] As this program costs a lot of memories, use as less processes and much threads as possible.\
+			Recommended strategy : num_proc * num_thread ~ number of cores in your CPUs. Let one cluster node support 1~2 processes. (Mentioned, large processes number may cause low precision in merging result)")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
+def use_project(project_path):
+	global _workpath
+
 	temp = None
 	if project_path[0] == '/' or project_path[0:2] == '~/':
 		temp = os.path.abspath(project_path)
@@ -31,21 +71,11 @@ def use_project(project_path):
 		else:
 			raise ValueError("The project " + temp + " doesn't exists. Exit")
 
-def new_project(data_path, inh5=None, path=None, name=None):
+def new_project(data_path, inh5, path=None, name=None):
 	global _workpath
-	import sys
-	import os
-	if type(data_path)!=str or data_path == "help":
-		print("This function is used to create a new project directory at your given path")
-		print("    -> Input: data_path (path of your patterns, MUST be h5 file)")
-		print("              inh5 (path of patterns inside h5 file, patterns should be stored in a numpy.ndarray, shape=(Nd,Nx,Ny))")
-		print("     *option: path (create work directory at your give path, default as current dir)")
-		print("     *option: name (give a name to your project, default is an number)")
-		print("[Notice] 'path' must be absolute path !")
-		return
 	import subprocess
-	import numpy as np
 	import h5py
+
 	code_path = __file__.split('/emc.py')[0] + '/template_emc'
 	if not os.path.exists(data_path):
 		raise ValueError("Your data path is incorrect. Try ABSOLUTE PATH. Exit\n")
@@ -103,24 +133,9 @@ def new_project(data_path, inh5=None, path=None, name=None):
 
 def config(params):
 	global _workpath
-	if type(params) == str and params == "help":
-		print("This function is used to edit configure file")
-		print("    -> Input (dict, parameters yout want to modified.)")
-		print("params format : ")
-		print("    {\n\
-					'parameters|detd' : 200, \n\
-					'emc|num_div' : 10, \n\
-					... \n\
-					}")
-		print("You can look into 'Config' part of README document for detail information;")
-		print("or refer to 'emc.config_essential' attribute for default values of neccessary parameters, ")
-		print("and 'emc.config_advanced' attribute for default values of optional parameters.")
-		print("Help exit.")
-		return
-	
-	import os
 	import ConfigParser
 	import subprocess
+
 	if not os.path.exists(os.path.join(_workpath,'config.ini')):
 		raise RuntimeError("I can't find your configure file, please run emc.new_project(...) first !")
 	if type(params)!=dict:
@@ -149,23 +164,9 @@ def config(params):
 	subprocess.check_call(cmd, shell=True)
 	print('\n Configure finished.')
 
-def run(num_proc, num_thread=None, iters=None, nohup=True, resume=False, cluster=True):
+def run(num_proc, num_thread, iters, nohup=False, resume=False, cluster=True):
 	global _workpath
-	if type(num_proc)==str and num_proc=="help":
-		print("Call this function to start emc")
-		print("    -> Input: num_proc (int, how many processes to run in parallel)")
-		print("              num_thread (int, how many threads in each process) ")
-		print("              iters (int, how many reconstruction iterations)")
-		print("       *option: nohup (bool, whether run in the background, default=False)")
-		print("       *option: resume (bool, whether run from previous break point, default=False)")
-		print("       *option: cluster (bool, whether you will submit jobs using job scheduling system, if yes, the function will only generate a command file at your work path without submitting it, and ignore nohup value. default=True)")
-		print("[Notice] As this program costs a lot of memories, use as less processes and much threads as possible.\
-			Recommended strategy : num_proc * num_thread ~ number of cores in your CPUs. Let one cluster node support 1~2 processes. (Mentioned, large processes number may cause low precision in merging result)")
-		return
-	import numpy as np
-	import os
 	import subprocess
-	import sys
 
 	num_proc = int(num_proc)
 	if num_thread is None or iters is None:

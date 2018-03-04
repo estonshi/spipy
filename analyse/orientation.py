@@ -1,7 +1,43 @@
+import numpy as np
+import os
+
+def help(module):
+	if module=="proc_Hammer":
+		print("This function is used to calculate Hammer-Aitoff profection of data")
+		print("    -> Input: qlist { <1> quaternions list : numpy.ndarray([w(:),qx(:),qy(:),qz(:)]), shape = (Nq,4) ;or")
+		print("                      <2> xyz coordinates : numpy.ndarray([x(:),y(:),z(:)]), shape = (Nq,3) }")
+		print("              data { data that want to be shown : numpy.ndarray, shape = (Nq,) }")
+		print("    [Notice] w = cos(the/2) , q? = q? * sin(theta/2). BE CAREFUL of the order!")
+		print("    [Notice] The order of data should matches bewteen qlist and data")
+		print("    -> Return: [[logitute,latitute,value],[x,y,value]]")
+		print("    [Notice] The returned list contains both (logitute,latitue) coordinate and (x,y) coordinate in Hammer-Aitoff projection map")
+		return
+	elif module=="draw_hammer":
+		print("This function is used to plot and show Hammer-Aitoff projection in a easy way")
+		print("    -> Input: logi_lati (data with coordinate, numpy.ndarray([logitute(:),latitue(:),data(:)]), shape = (Nd,3))")
+		print("     *option: save_dir (dirname, save the figure to this folder, ABSOLUTE PATH !, default=None)")
+		return
+	elif module=="draw_ori_Df":
+		print("This function is used to do draw probability distribution of orientations from Dragonfly output")
+		print("    -> Input: ori_bin (path of Dragonfly orientation output 'orientations_xxx.bin')")
+		print("              q_level (int, the 'num_div' parameter used in Dragonfly)")
+		return
+	elif module=="Sphere_randp":
+		print("This function returns randomly/uniformly ditributed points on spherical surface")
+		print("    -> Input: algo (str, algorithms to use : 'random' or 'uniform')")
+		print("              radius (positive float, radius of the spherical surface)")
+		print("              num (positive int, how many points do you want)")
+		print("    -> Return: list, contains cartisian description and radius description : ")
+		print("               [numpy.ndarray shape=(Nd,3), numpy.ndarray shape=(Nd,2)]")
+		print("                shape = (num,3)                , shape = (num,2)")
+		print("[Notice] The returned theta is azimuth angle [0~2pi) and phi is zenith angle [-pi/2~pi/2]")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
 def _vec2llxy(n1):
 	# n1 = [x,y,z]
 	# transfer 3d vector to logitute/latitute and x,y values hammer-aitoff coordinate
-	import numpy as np
 	if np.abs(np.linalg.norm(n1)-1)>1e-3:
 			raise ValueError('Rotation matrix ???')
 	latitute = np.arcsin(n1[2,0]/np.linalg.norm(n1,2))
@@ -22,7 +58,6 @@ def _xyz2ang(n, center):
 	# n = [x,y,z] or [x,y]
 	# center = (cx,cy,cz) or (cx,cy)
 	# returned theta is azimuth angle [0~2pi) and phi is zenith angle [0~pi]
-	import numpy as np
 	n1 = np.array(n) - np.array(center)
 	if len(n1) == 3:
 		R = np.linalg.norm(n1)
@@ -50,18 +85,7 @@ def _xyz2ang(n, center):
 		raise ValueError("Input data format error")
 
 # process data to fit hammer-aitoff projection
-def proc_Hammer(qlist, data=None):
-	import numpy as np
-	if type(qlist)!=np.ndarray or data is None:
-		print("This function is used to calculate Hammer-Aitoff profection of data")
-		print("    -> Input: qlist { <1> quaternions list : numpy.ndarray([w(:),qx(:),qy(:),qz(:)]), shape = (Nq,4) ;or")
-		print("                      <2> xyz coordinates : numpy.ndarray([x(:),y(:),z(:)]), shape = (Nq,3) }")
-		print("              data { data that want to be shown : numpy.ndarray, shape = (Nq,) }")
-		print("    [Notice] w = cos(the/2) , q? = q? * sin(theta/2). BE CAREFUL of the order!")
-		print("    [Notice] The order of data should matches bewteen qlist and data")
-		print("    -> Return: [[logitute,latitute,value],[x,y,value]]")
-		print("    [Notice] The returned list contains both (logitute,latitue) coordinate and (x,y) coordinate in Hammer-Aitoff projection map")
-		return
+def proc_Hammer(qlist, data):
 	if qlist.shape[1]<3 or qlist.shape[1]>4:
 		raise ValueError("Check your input qlist please. Exit")
 	import sys
@@ -85,13 +109,6 @@ def proc_Hammer(qlist, data=None):
 
 # show Hammer-Aitoff projection
 def draw_hammer(logi_lati, save_dir=None):
-	import numpy as np
-	import os
-	if type(logi_lati)!=np.ndarray:
-		print("This function is used to plot and show Hammer-Aitoff projection in a easy way")
-		print("    -> Input: logi_lati (data with coordinate, numpy.ndarray([logitute(:),latitue(:),data(:)]), shape = (Nd,3))")
-		print("     *option: save_dir (dirname, save the figure to this folder, ABSOLUTE PATH !, default=None)")
-		return
 	n = logi_lati
 	import matplotlib.pyplot as plt
 	plt.figure(figsize=(16,8))
@@ -109,14 +126,7 @@ def draw_hammer(logi_lati, save_dir=None):
 	plt.show()
 
 # Probability distribution of orientations(quaternions) from Dragonfly
-def draw_ori_Df(ori_bin, q_level=None):
-	import os
-	import numpy as np
-	if ori_bin=="help" or type(ori_bin)!=str or q_level==None:
-		print("This function is used to do draw probability distribution of orientations from Dragonfly output")
-		print("    -> Input: ori_bin (path of Dragonfly orientation output 'orientations_xxx.bin')")
-		print("              q_level (int, the 'num_div' parameter used in Dragonfly)")
-		return
+def draw_ori_Df(ori_bin, q_level):
 
 	def gen_prob_dist(ori_file, q_level = 10):
 		q_num = 10*(q_level+5*q_level**3)
@@ -144,19 +154,8 @@ def draw_ori_Df(ori_bin, q_level=None):
 	draw_hammer(ll)
 
 # randomly get points on a spherical surface
-def Sphere_randp(algo, radius=None, num=None):
-	import numpy as np
+def Sphere_randp(algo, radius, num):
 	import math
-	if type(algo)!=str or algo=="help" or radius is None or num is None:
-		print("This function returns randomly/uniformly ditributed points on spherical surface")
-		print("    -> Input: algo (str, algorithms to use : 'random' or 'uniform')")
-		print("              radius (positive float, radius of the spherical surface)")
-		print("              num (positive int, how many points do you want)")
-		print("    -> Return: list, contains cartisian description and radius description : ")
-		print("               [numpy.ndarray shape=(Nd,3), numpy.ndarray shape=(Nd,2)]")
-		print("                shape = (num,3)                , shape = (num,2)")
-		print("[Notice] The returned theta is azimuth angle [0~2pi) and phi is zenith angle [-pi/2~pi/2]")
-		return
 
 	if algo == "uniform":
 		# Spherical Fibonacci Mapping

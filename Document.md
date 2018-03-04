@@ -10,6 +10,8 @@
 	* [saxs](#saxs)
 	* [orientation](#ori)
 	* [SH_expan](#sh)
+	* [criterion](#crit)
+	* [rotate](#rot)
 * [image](#image)
 	* [radp](#radp)
 	* [quat](#quat)
@@ -34,7 +36,7 @@ import spipy.image as spiimage
 ***
 ### 2. Install
 
-> The package need Anaconda2 installed in advance
+**> The package need Anaconda2 installed in advance**
 
 **Download**
 
@@ -49,7 +51,8 @@ git clone https://github.com/GeekGitman/spipy.git
 ```
 
 </br>
-***<span id="example"></span>
+***
+<span id="example"></span>
 ### 3. Help and examples
 
 **You can refer to *help* function of spipy or its modules to get immediate help. For example :** 
@@ -59,21 +62,21 @@ git clone https://github.com/GeekGitman/spipy.git
 >> import spipy
 >> spipy.help()
 >> spipy.phase.help()
->> spipy.phase.help("phase2d")
->> spipy.phase.phase2d("help")
+>> spipy.phase.phase2d.help("function_name")
 ```
 
 **In the *'test_spipy'* directory, you can find examples about how to use functions in every modules. For example :**
 
 ```shell
 cd ./test_spipy/image
-python test_classify.py
+open test_classify.py
+python test_classify.py   #some scripts need command line parameters
 ```
-
 </br>
 ***
+
 ### 4. Modules
-> **varialbles that begin with '#' are optional, their default values are behind '/'**
+**> varialbles that begin with '#' are optional, their default values are behind '/'**
 
 <span id="analyse"></span>
 <span id='q'></span>
@@ -173,10 +176,69 @@ python test_classify.py
 + :numpy.1darray = sp_hamonics (data:{'volume':numpy.3darray, 'mask':numpy.3darray}, r:float, #L:int/10)
 ```
 --
-* **sp\_harmonics : spherical expansion of a 3D-intensity**, return Cl, shape=(L,)
+* **sp\_harmonics : spherical harmonics expansion of a 3D-intensity**, return Cl, shape=(L,)
 	* data : { 'volume' : intensity voxel data, 'mask' : mask voxel data }, if no mask please set 'mask' : None
 	* r : radius of the shell you want to expand, unit=pixels
 	* #L : level of hamonics, recommended >=10
+
+<span id="crit"></span>
+#### 4.1.5 spipy.analyse.criterion
+
+```text
++ :float = r_factor (F_cal:numpy.3darray, F_obs:numpy.3darray)
+
++ :numpy.1darray = r_factor_shell (F_cal:numpy.3darray, F_obs:numpy.3darray, rlist:list/np.1darray)
+
++ :numpy.1darray = fsc (F1:numpy.3darray, F2:numpy.3darray, rlist:list/np.1darray)
+```
+--
+* **r\_factor : overall r-factor of two models**, return a float~[0,1]
+	* F_cal : voxel models from calculation
+	* F_obs : voxel models from observation
+
+--
+* **r\_factor\_shell : r-factor of shells with different radius between two models**, return an array containing r-factors of all shells
+	* F_cal : voxel models from calculation
+	* F_obs : voxel models from observation
+	* rlist : radius list of shells
+
+--
+* **fsc : Fourier Shell Correlation between two models** (in frequency space), return an array containing correlations of all shells
+	* F1 : the first voxel model
+	* F2 : the second voxel model
+	* rlist : radius list of shells
+
+<span id="rot"></span>
+#### 4.1.6 spipy.analyse.rotate
+
+```text
++ :numpy.2darray = eul2rotm (ea:list/np.1darray, order:str)
+
++ :numpy.3darray = rot_ext (ea:list/nump.1darray, order:str, matrix:numpy.3darray, #ref:numpy.3darray/None)
+
++ :(float, list, numpy.3darray) = run_grid_search (fix:numpy.3darray, mov:numpy.3darray, #grid_unit:list/[0.3,0.1], #nproc:int/2, #resize:int/40, #order:str/'zxz')
+```
+--
+* **eul2rotm : transfer euler angles to rotation matrix in intrinsic order**, return 3x3 rotation matrix
+	* ea : euler angles, **intrinsic rotation**, unit = rad
+	* order : rotation order, such as 'zxz', 'zyz' or 'xyz'
+
+--
+* **rot\_ext : do an extrinsic rotation to a 3D voxel model**, return rotated model
+	* ea : euler angles, **extrinsic rotation**, unit = rad
+	* order : rotation order, such as 'zxz', 'zyz', 'xyz'
+	* matrix : input voxel model in 3d matrix
+	* #ref : reference model in 3d matrix, if given, program will compare rotated model with reference by ploting their x/y/z slices. default is None
+
+--
+* **align : Using grid search (euler angles) to align two models**, return (r\_factor : overall r-factor between fixed and best aligned mov model , ea : best aligned euler angle , new\_mov : mov model after aligned)
+	* fix : fixed model
+	* mov : rotated model while aligning
+	* #grid\_unit : grid size (**in rad**) of alpha,beta,gamma euler angles. This is a **list**, default=[0.3, 0.1], which means the program will firstly search with grid\_size = 0.3 rad, then fine-tune around the euler angles it just gets that best align two models with smaller grid\_size (= 0.1 rad). Of course you can use more loops such as [0.3, 0.1, 0.02, ...]
+	* #nproc : number of processes to run in parallel, **NOTE** that the program parallels in **alpha** angles, default=2
+	* #resize : resize your input models to a smaller size to accelerate, default=40 pixels
+	* #order : rotation order while aligning, default='zxz'
+	* [NOTICE] range of three euler angles : alpha [0, 2pi); beta [0, pi); gamma [0, 2pi)
 
 <span id="image"></span>
 <span id='radp'></span>
@@ -380,6 +442,8 @@ You can split the original dataset into several parts and use multi-processors t
 <span id='emc'></span>
 #### 4.4.1 spipy.merge.emc
 
+*--> " EMC merging algorithm implemetation "*
+
 ```text
 + config_essential:dict
 
@@ -445,6 +509,8 @@ You can split the original dataset into several parts and use multi-processors t
 <span id="phase2d"></span>
 #### 4.5.1 spipy.phase.phase2d
 
+*--> " 2d pattern phase retrieval using projection-support methods "*
+
 ```text
 + :void = new_project (data_mask_path:str, #path:str/None, #name:str/None)
 
@@ -499,6 +565,8 @@ You can split the original dataset into several parts and use multi-processors t
 
 <span id="phase3d"></span>
 #### 4.5.2 spipy.phase.phase3d
+
+*--> " 3d voxel model phase retrieval using projection-support methods "*
 
 ```text
 + :void = new_project (data_path:str, #path:str/None, #name:str/None)

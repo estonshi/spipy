@@ -1,6 +1,19 @@
+import numpy as np
+
+def help(module):
+	if module=="sp_hamonics":
+		print("This function is used to calculate spherical harmonics of a volume")
+		print("    -> Input: data (input dataset, dict, {'volume':[...], 'mask':[...]}), set 'mask' as None if data doesn't need a mask")
+		print("              r (int/float, radius of the shell you want to expand, in pixels)")
+		print("     *option: L (int, level of hamonics, default is 10)")
+		print("    -> Return: shdes (numpy.ndarray, shape=(L,))")
+		print("[Notice] The volume/mask inside data should be 3-dimensional matrix")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
 class _sphere_des():
 	# spherical polym descriptor
-	import numpy as np
 	from scipy.special import sph_harm
 	import sys
 	import os
@@ -10,6 +23,7 @@ class _sphere_des():
 	import q
 	import radp
 	import orientation
+	import numpy as np
 
 	def __init__(self):
 		self.data = None
@@ -70,16 +84,7 @@ class _sphere_des():
 		print("\ndone.\n")
 		return self.Cl
 
-def sp_hamonics(data, r=40, L=10):
-	import numpy as np
-	if type(data)==str and data=="help":
-		print("This function is used to calculate spherical harmonics of a volume")
-		print("    -> Input: data (input dataset, dict, {'volume':[...], 'mask':[...]}), set 'mask' as None if data doesn't need a mask")
-		print("              r (int/float, radius of the shell you want to expand, in pixels)")
-		print("     *option: L (int, level of hamonics, default is 10)")
-		print("    -> Return: shdes (numpy.ndarray, shape=(L,))")
-		print("[Notice] The volume/mask inside data should be 3-dimensional matrix")
-		return
+def sp_hamonics(data, r, L=10):
 	calculator = _sphere_des()
 	calculator.load_data(data)
 	shdes = calculator.compute(L+1,r)

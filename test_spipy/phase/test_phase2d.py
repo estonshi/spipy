@@ -18,8 +18,9 @@ if __name__=="__main__":
 	parameters = dict(params_essential, **params_optional)
 	phase2d.config(params = parameters)
 
-	print("Start !")
+	print("\nStart ! Run in background ! Check log file for details!")
 	phase2d.run(nohup=True)
 
+	print("\nRun ' python show_result.py output.h5 ' at the project dir to see results.\n")
 	sys.exit(0)
 	phase2d.show_result(outpath=None, exp_param='581,7.9,128,0.3')
