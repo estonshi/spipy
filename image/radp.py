@@ -1,11 +1,49 @@
-def radial_profile_2d(data, center=None):
-	import numpy as np
-	if type(data)!=np.ndarray or center is None:
+import numpy as np
+
+def help(module):
+	if module=="radial_profile_2d":
 		print("This function is used to do averaged radial integration of an image")
 		print("    -> Input: data (input image, numpy.ndarray, shape = (Nx, Ny))")
 		print("              center (the zero point of your radial profile)")
 		return
+	elif module=="radial_profile_3d":
+		print("This function is used to do averaged radial integration of an volume")
+		print("    -> Input: data (input image, numpy.ndarray, shape = (Nx, Ny, Nz))")
+		print("              center (the zero point of your radial profile)")
+		return
+	elif module=="shells_2d":
+		print("This function returns indices in a pattern which forms a shell/circle when radius=rads")
+		print("    -> Input: rads (int/float list[], a set of radius in pixels)")
+		print("              data_shape (int turple, (sizex, sizey))")
+		print("              center (data center, int/float turple/list, [cx, cy])")
+		print("    -> Return: re (list, [shell1(numpy.ndarray,shape=(N1,2)), shell2(numpy.ndarray,shape=(N2,2)), ...])")
+		return
+	elif module=="shells_3d":
+		print("This function returns indices in a pattern which forms a shell when radius=rads")
+		print("    -> Input: rads (int/float list, a set of radius in pixels)")
+		print("              data_shape (int turple, (sizex, sizey, sizez))")
+		print("              center (data center, int/float turple/list, [cx, cy, cz])")
+		print("    -> Return: re (list, [ shell1(numpy.ndarray), shell2(numpy.ndarray), ...])")
+		return
+	elif module=="radp_norm_2d":
+		print("This function normalize pattern intensities (averaged inside r shells) using a given radial profile")
+		print("    -> Input: ref_Iq (Reference radial intensity profile, numpy.ndarray, shape=(Nr,))")
+		print("              data (pattern 2, numpy.ndarray, shape=(Nx,Ny)")
+		print("              center (center of data, shape=[Cx,Cy])")
+		print("[Notice] zeros point of ref_Iq locates on the center of input data")
+		return
+	elif module=="radp_norm_3d":
+		print("This function normalize volume intensities (averaged inside r shells) using a given radial profile")
+		print("    -> Input: ref_Iq (Reference radial intensity profile, numpy.ndarray, shape=(Nr,))")
+		print("              data (pattern 2, numpy.ndarray, shape=(Nx,Ny,Nz)")
+		print("              center (center of data, shape=[Cx,Cy,Cz])")
+		print("[Notice] While in normalization, zeros point of ref_Iq are forced to locate on the center of input data")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
 
+
+def radial_profile_2d(data, center):
 	x, y = np.indices((data.shape))
 	r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
 	r = r.astype(np.int)
@@ -15,14 +53,7 @@ def radial_profile_2d(data, center=None):
 	radialprofile = tbin / nr
 	return radialprofile
 
-def radial_profile_3d(data, center=None):
-	import numpy as np
-	if type(data)!=np.ndarray or center==None:
-		print("This function is used to do averaged radial integration of an volume")
-		print("    -> Input: data (input image, numpy.ndarray, shape = (Nx, Ny, Nz))")
-		print("              center (the zero point of your radial profile)")
-		return
-
+def radial_profile_3d(data, center):
 	x, y, z = np.indices((data.shape))
 	r = np.sqrt((x-center[0])**2 + (y-center[1])**2 +(z-center[2])**2)
 	r = r.astype(np.int)
@@ -32,15 +63,7 @@ def radial_profile_3d(data, center=None):
 	radialprofile = tbin/nr
 	return radialprofile
 
-def shells_2d(rads, data_shape=None, center=None):
-	import numpy as np
-	if type(rads)==str and rads=="help":
-		print("This function returns indices in a pattern which forms a shell/circle when radius=rads")
-		print("    -> Input: rads (int/float list[], a set of radius in pixels)")
-		print("              data_shape (int turple, (sizex, sizey))")
-		print("              center (data center, int/float turple/list, [cx, cy])")
-		print("    -> Return: re (list, [shell1(numpy.ndarray,shape=(N1,2)), shell2(numpy.ndarray,shape=(N2,2)), ...])")
-		return
+def shells_2d(rads, data_shape, center):
 	x, y = np.indices(data_shape)
 	r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
 	re = []
@@ -49,15 +72,7 @@ def shells_2d(rads, data_shape=None, center=None):
 		re.append(np.vstack((selx,sely)).T)
 	return re
 
-def shells_3d(rads, data_shape=None, center=None):
-	import numpy as np
-	if rads=="help":
-		print("This function returns indices in a pattern which forms a shell when radius=rads")
-		print("    -> Input: rads (int/float list, a set of radius in pixels)")
-		print("              data_shape (int turple, (sizex, sizey, sizez))")
-		print("              center (data center, int/float turple/list, [cx, cy, cz])")
-		print("    -> Return: re (list, [ shell1(numpy.ndarray), shell2(numpy.ndarray), ...])")
-		return
+def shells_3d(rads, data_shape, center):
 	x, y, z = np.indices(data_shape)
 	r = np.sqrt((x - center[0])**2 + (y - center[1])**2 + (z - center[2])**2)
 	re = []
@@ -66,15 +81,7 @@ def shells_3d(rads, data_shape=None, center=None):
 		re.append(np.vstack((selx,sely,selz)).T)
 	return re
 
-def radp_norm_2d(ref_Iq, data=None, center=None):
-	import numpy as np
-	if type(ref_Iq)==str and ref_Iq=="help":
-		print("This function normalize pattern intensities (averaged inside r shells) using a given radial profile")
-		print("    -> Input: ref_Iq (Reference radial intensity profile, numpy.ndarray, shape=(Nr,))")
-		print("              data (pattern 2, numpy.ndarray, shape=(Nx,Ny)")
-		print("              center (center of data, shape=[Cx,Cy])")
-		print("[Notice] zeros point of ref_Iq locates on the center of input data")
-		return
+def radp_norm_2d(ref_Iq, data, center):
 	x, y = np.indices((data.shape))
 	r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
 	r = r.astype(np.int)
@@ -92,15 +99,7 @@ def radp_norm_2d(ref_Iq, data=None, center=None):
 		newdata[np.where(r==rad)] = data[np.where(r==rad)] * norm_factor[ind]
 	return newdata
 
-def radp_norm_3d(ref_Iq, data=None, center=None):
-	import numpy as np
-	if type(ref_Iq)==str and ref_Iq=="help":
-		print("This function normalize volume intensities (averaged inside r shells) using a given radial profile")
-		print("    -> Input: ref_Iq (Reference radial intensity profile, numpy.ndarray, shape=(Nr,))")
-		print("              data (pattern 2, numpy.ndarray, shape=(Nx,Ny,Nz)")
-		print("              center (center of data, shape=[Cx,Cy,Cz])")
-		print("[Notice] While in normalization, zeros point of ref_Iq are forced to locate on the center of input data")
-		return
+def radp_norm_3d(ref_Iq, data, center):
 	x, y, z = np.indices((data.shape))
 	r = np.sqrt((x - center[0])**2 + (y - center[1])**2 + (z - center[2])**2)
 	r = r.astype(np.int)

@@ -58,7 +58,7 @@ chmod u+x compile.sh ../new_project
 if [ $sys = "Linux" ]
 then
 	mpicc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_LINUX -I ./ -lgsl -lgslcblas -lm -O3
-	chmod u+x emc_MAC
+	chmod u+x emc_LINUX
 elif [ $sys = "Darwin" ]
 then
 	$mygcc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_MAC -I ./ -lgsl -lgslcblas -lm -O3 -lmpi
@@ -81,6 +81,8 @@ fi
 echo "==> others"
 cd $root_folder/phase
 chmod u+x ./template_2d/new_project ./template_3d/new_project
+cd $root_folder/image/qlist_dir
+chmod u+x ./gen_quat
 
 # make soft link
 ln -fs $root_folder ${Ana_path%/bin/python*}/lib/python2.7/site-packages/spipy

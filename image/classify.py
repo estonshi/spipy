@@ -1,6 +1,44 @@
+import numpy as np
+import sys
+
+def help(module):
+	if module=="cluster_fSpec":
+		print("This function is used to do single-nonsingle hits clustering using linear/non-linear decomposition and spectural clustering")
+		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
+		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used\
+							 for clustering, default=0.3)")
+		print("      option: decomposition (str, decoposition method, choosen from 'LLE', 'SVD' and 'SpecEM'\
+											default='SVD')")
+		print("      option: ncomponent (int, number of components left after decomposition, default=2)")
+		print("      option (LLE): nneighbors (int, number of neighbors in LLE graph, default=10)")
+		print("      option (LLE): LLEmethod (methods used in LLE, choosen from 'standard', 'modified', 'hessian' and 'ltsa',\
+									 default='standard')")
+		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
+		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
+You can split the original dataset into several parts and use multi-processors to deal with them.")
+		print("Help End. Exit.")
+		return
+	elif module=="cluster_fTSNE":
+		print("This function is used to do single-nonsingle patterns clustering using TSNE and kmeans")
+		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
+		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used for clustering, default=0.3)")
+		print("      option (TSNE): no_dims (+int, dimensions after decomposition, default=2)")
+		print("      option (TSNE): perplexity (+int, perlexity value to evaluate P(i|j) in TSNE, default=50)")
+		print("      option (TSNE): use_pca (bool, whether to use PCA to generate initiate features, default=True)")
+		print("      option (TSNE): initial_dims (+int, output dimensions of inititate PCA, ignored if use_pca=False, default=50)")
+		print("      option (TSNE): max_iter (+int, max iterations, default=1000, suggested >500)")
+		print("      option (TSNE): theta (0~1 float, the speed vs accuracy trade-off parameter, theta=1 means highest speed, default=0.5)")
+		print("      option (TSNE): randseed (int, >=0 use 'randseed' as initiate value's generating seed, <0 use current time as random seed, default=-1)")
+		print("      option (TSNE): verbose (default=False)")
+		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
+		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
+You can split the original dataset into several parts and use multi-processors to deal with them.")
+		print("Help End. Exit.")
+		return
+	else:
+		raise ValueError("No module names "+str(module))
+
 def cluster_fSpec(dataset, low_filter=0.3, decomposition='SVD', ncomponent=2, nneighbors=10, LLEmethod='standard'):
-	import numpy as np
-	import sys
 	if type(dataset)==str and dataset=="help":
 		print("This function is used to do single-nonsingle hits clustering using linear/non-linear decomposition and spectural clustering")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
@@ -77,8 +115,6 @@ You can split the original dataset into several parts and use multi-processors t
 
 
 def cluster_fTSNE(dataset, low_filter=0.3, no_dims=2, perplexity=50, use_pca=True, initial_dims=50, max_iter=500, theta=0.5, randseed=-1, verbose=False):
-	import numpy as np
-	import sys
 	import os
 	import gc
 	if type(dataset)==str and dataset=="help":

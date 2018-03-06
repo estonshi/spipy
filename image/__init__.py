@@ -9,6 +9,22 @@ def help(module = None):
 	import os
 	import sys
 	from inspect import isfunction
+	flag = 0
+	if sys._getframe().f_back.f_code.co_name == 'help':
+		flag = 1
+	if flag == 0:
+		print("this package includes modules-functions : ")
+	for f in __all__:
+		if flag == 0:
+			print("    |- " + f)
+			cmd = 'dir(' + f + ')'
+			_all_func = eval(cmd)
+			for func in _all_func:
+				if func[0] != '_' and isfunction(eval(f+'.'+func)):
+					print("        |- " + func)
+		else:
+			print("        |- " + f)
+	"""
 	if module is None:
 		flag = 0
 		if sys._getframe().f_back.f_code.co_name == 'help':
@@ -37,3 +53,4 @@ def help(module = None):
 				print(str(ind) + ") " + func + "(*Input) :")
 				eval(cmd2)
 				ind += 1
+	"""

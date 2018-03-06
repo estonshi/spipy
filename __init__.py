@@ -6,10 +6,13 @@ import merge
 
 def help():
 	import os
-	print("spipy software includes modules : ")
+	print("spipy software includes packages-modules-functions : ")
 	for f in os.listdir(__file__.split('__init__.py')[0]):
 		if '.' in f:
 			continue
 		else:
 			print("    |- " + f)
-			eval(f).help()
+			try:
+				eval(f).help()
+			except:
+				pass
