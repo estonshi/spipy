@@ -41,7 +41,7 @@ if __name__ == "__main__":
         scatt_list  = process_pdb.make_scatt_list(atom_types, aux_dir, eV)
         atoms       = process_pdb.get_atom_coords(pdb_file, scatt_list)
         (s_l, t_l)  = process_pdb.read_symmetry(pdb_file)
-	if len(s_l)*len(t_l)>0:
+        if len(s_l)*len(t_l)>0:
             all_atoms = process_pdb.apply_symmetry(atoms, s_l, t_l)
         else:
             all_atoms = atoms

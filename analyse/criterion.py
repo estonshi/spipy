@@ -24,6 +24,12 @@ def help(module):
 		print("              rlist ( list/array, radius of shells)")
 		print("    -> Output: fsc ( np.array, the same shape with rlist )")
 		return
+	elif module=="r_split":
+		print("Calculate r-split factors between two models (in frequency space)")
+		print("    -> Input: F1 ( the first voxel model, 3d numpy.array )")
+		print("              F2 ( the second voxel model, 3d numpy.array)")
+		print("              rlist ( list/array, radius of shells)")
+		print("    -> Output: rs ( np.array, the same shape with rlist )")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -59,3 +65,16 @@ def fsc(F1, F2, rlist):
 		down = np.sqrt( np.sum( np.abs(shell_f1)**2 ) * np.sum( np.abs(shell_f2)**2 ) )
 		FSC[ind] = np.abs(up) / down
 	return FSC
+
+def r_split(F1, F2, rlist):
+	if F1.shape != F2.shape:
+		raise RuntimeError("F1 and F2 should be in the same size!")
+	size = np.array(F1.shape)
+	center = (size-1)/2.0
+	shells = radp.shells_3d(rlist, size, center)
+	rs = np.zeros(len(rlist))
+	for ind,shell in enumerate(shells):
+		shell_f1 = F1[shell[:,0],shell[:,1],shell[:,2]] + 1e-15
+		shell_f2 = F2[shell[:,0],shell[:,1],shell[:,2]] + 1e-15
+		rs[ind] = 2 * np.sum(np.abs(np.abs(F1) - np.abs(F2))) / np.sum(np.abs(F1) + np.abs(F2))
+	return rs

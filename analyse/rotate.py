@@ -60,11 +60,11 @@ def eul2rotm(ea, order):
 			T = np.dot( T, Rx(ea[ind]) )
 	return T
 
-def rot_ext(ea, order, matrix, ref=None):
-	if len(matrix.size)!=3:
+def rot_ext(ea, order, vol, ref=None):
+	if len(vol.shape)!=3:
 		raise RuntimeError("Input matrix should be 3-dimension!")
 	angle = np.array(ea)/np.pi*180
-	d = copy.deepcopy(matrix)
+	d = copy.deepcopy(vol)
 	for ind,o in enumerate(order):
 		if o=='z':
 			d = interpolation.rotate(d,angle[ind],(0,1),False)
@@ -74,7 +74,7 @@ def rot_ext(ea, order, matrix, ref=None):
 			d = interpolation.rotate(d,angle[ind],(1,2),False)
 	if ref is not None:
 		import matplotlib.pyplot as plt
-		size = list(matrix.shape)
+		size = list(vol.shape)
 		plt.figure(figsize=(14,7))
 		plt.subplot(2,3,1)
 		plt.imshow(np.log(1+np.abs(ref[size[0]/2,:,:])))

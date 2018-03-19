@@ -1,9 +1,10 @@
-__all__ = ['radp', 'quat', 'classify', 'preprocess']
+__all__ = ['radp', 'quat', 'classify', 'preprocess','io']
 
 import radp
 import quat
 import classify
 import preprocess
+import io
 
 def help(module = None):
 	import os
@@ -24,6 +25,11 @@ def help(module = None):
 					print("        |- " + func)
 		else:
 			print("        |- " + f)
+			cmd = 'dir(' + f + ')'
+			_all_func = eval(cmd)
+			for func in _all_func:
+				if func[0] != '_' and isfunction(eval(f+'.'+func)):
+					print("            |- " + func)
 	"""
 	if module is None:
 		flag = 0

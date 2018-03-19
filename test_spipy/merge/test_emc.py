@@ -6,8 +6,9 @@ from spipy.merge import emc
 if __name__=="__main__":
 	
 	print("\n(1) test emc.new_project ..")
-	emc.new_project(data_path = "Your h5 pattern dataset",\
-			inh5 = "pattern path inside h5 file",\
+	fpath = '../test_pattern.h5'
+	emc.new_project(data_path = fpath,\
+			inh5 = "patterns",\
 			path = "./",\
 			name = None)
 	

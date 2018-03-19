@@ -6,7 +6,7 @@ def help(module):
 		print("This function is used to calculate Hammer-Aitoff profection of data")
 		print("    -> Input: qlist { <1> quaternions list : numpy.ndarray([w(:),qx(:),qy(:),qz(:)]), shape = (Nq,4) ;or")
 		print("                      <2> xyz coordinates : numpy.ndarray([x(:),y(:),z(:)]), shape = (Nq,3) }")
-		print("              data { data that want to be shown : numpy.ndarray, shape = (Nq,) }")
+		print("              data { intensity that want to be shown : numpy.ndarray, shape = (Nq,) }")
 		print("    [Notice] w = cos(the/2) , q? = q? * sin(theta/2). BE CAREFUL of the order!")
 		print("    [Notice] The order of data should matches bewteen qlist and data")
 		print("    -> Return: [[logitute,latitute,value],[x,y,value]]")

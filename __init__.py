@@ -8,7 +8,7 @@ def help():
 	import os
 	print("spipy software includes packages-modules-functions : ")
 	for f in os.listdir(__file__.split('__init__.py')[0]):
-		if '.' in f:
+		if (not os.path.isdir(f)) or ('.' in f):
 			continue
 		else:
 			print("    |- " + f)

@@ -19,7 +19,7 @@ def help(module):
 		return
 	elif module=="new_project":
 		print("This function is used to create a new project directory at your given path")
-		print("    -> Input: data_path (path of your patterns, MUST be h5 file)")
+		print("    -> Input: data_path (path of your patterns' file, MUST be h5 file)")
 		print("              inh5 (path of patterns inside h5 file, patterns should be stored in a numpy.ndarray, shape=(Nd,Nx,Ny))")
 		print("     *option: path (create work directory at your give path, default as current dir)")
 		print("     *option: name (give a name to your project, default is an number)")

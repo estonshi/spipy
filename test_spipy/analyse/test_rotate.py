@@ -12,13 +12,13 @@ if __name__=="__main__":
 	python test_rotate.py [path_fixed_model] [path_moving model] [angle grid] [number of processes] [output dir]
 	'''
 	try:
-		fix = sys.argv[1]
-		mov = sys.argv[2]
-		grid_unit = map(np.float,sys.argv[3].split(','))
-		nproc = int(sys.argv[4])
-		save_dir = sys.argv[5]
+		fix = 'volume.bin'
+		mov = 'volume_rotated.bin'
+		grid_unit = map(np.float,sys.argv[1].split(','))
+		nproc = int(sys.argv[2])
+		save_dir = sys.argv[3]
 	except:
-		print("python test_rotate.py [path_fixed_model] [path_moving model] [angle grid] [number of processes] [output dir]")
+		print("python test_rotate.py [angle grid] [number of processes] [output dir]")
 		sys.exit(0)
 	
 	if not os.path.isdir(save_dir):
@@ -27,8 +27,8 @@ if __name__=="__main__":
 	outer_cut = 50
 	inner_cut = 10
 
-	d1 = np.load(fix)
-	d2 = np.load(mov)
+	d1 = np.fromfile(fix).reshape((125,125,125))
+	d2 = np.fromfile(mov).reshape((125,125,125))
 	center = np.array(d1.shape, dtype=int)/2
 	d1_small = copy.deepcopy(d1[center[0]-outer_cut:center[0]+outer_cut, center[1]-outer_cut:center[1]+outer_cut, center[2]-outer_cut:center[2]+outer_cut])
 	d2_small = copy.deepcopy(d2[center[0]-outer_cut:center[0]+outer_cut, center[1]-outer_cut:center[1]+outer_cut, center[2]-outer_cut:center[2]+outer_cut])

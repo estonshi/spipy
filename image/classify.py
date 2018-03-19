@@ -1,10 +1,12 @@
 import numpy as np
 import sys
+sys.path.append(__file__.split("/image/classify.py")[0] + '/analyse')
 
 def help(module):
 	if module=="cluster_fSpec":
 		print("This function is used to do single-nonsingle hits clustering using linear/non-linear decomposition and spectural clustering")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
+		print("      option: mask ( 0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means open area, default=None)")
 		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used\
 							 for clustering, default=0.3)")
 		print("      option: decomposition (str, decoposition method, choosen from 'LLE', 'SVD' and 'SpecEM'\
@@ -14,16 +16,17 @@ def help(module):
 		print("      option (LLE): LLEmethod (methods used in LLE, choosen from 'standard', 'modified', 'hessian' and 'ltsa',\
 									 default='standard')")
 		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
-		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
+		print("[Notice] The input dataset is not recommended to contain more than 1k patterns, but it's also neccessary to have more than 50 ones.\
 You can split the original dataset into several parts and use multi-processors to deal with them.")
 		print("Help End. Exit.")
 		return
 	elif module=="cluster_fTSNE":
 		print("This function is used to do single-nonsingle patterns clustering using TSNE and kmeans")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
+		print("      option: mask ( 0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means open area, default=None)")
 		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used for clustering, default=0.3)")
 		print("      option (TSNE): no_dims (+int, dimensions after decomposition, default=2)")
-		print("      option (TSNE): perplexity (+int, perlexity value to evaluate P(i|j) in TSNE, default=50)")
+		print("      option (TSNE): perplexity (+int, perlexity value to evaluate P(i|j) in TSNE, default=20)")
 		print("      option (TSNE): use_pca (bool, whether to use PCA to generate initiate features, default=True)")
 		print("      option (TSNE): initial_dims (+int, output dimensions of inititate PCA, ignored if use_pca=False, default=50)")
 		print("      option (TSNE): max_iter (+int, max iterations, default=1000, suggested >500)")
@@ -31,31 +34,14 @@ You can split the original dataset into several parts and use multi-processors t
 		print("      option (TSNE): randseed (int, >=0 use 'randseed' as initiate value's generating seed, <0 use current time as random seed, default=-1)")
 		print("      option (TSNE): verbose (default=False)")
 		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
-		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
+		print("[Notice] The input dataset is not recommended to contain more than 1k patterns, but it's also neccessary to have more than 50 ones.\
 You can split the original dataset into several parts and use multi-processors to deal with them.")
 		print("Help End. Exit.")
 		return
 	else:
 		raise ValueError("No module names "+str(module))
 
-def cluster_fSpec(dataset, low_filter=0.3, decomposition='SVD', ncomponent=2, nneighbors=10, LLEmethod='standard'):
-	if type(dataset)==str and dataset=="help":
-		print("This function is used to do single-nonsingle hits clustering using linear/non-linear decomposition and spectural clustering")
-		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
-		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used\
-							 for clustering, default=0.3)")
-		print("      option: decomposition (str, decoposition method, choosen from 'LLE', 'SVD' and 'SpecEM'\
-											default='SVD')")
-		print("      option: ncomponent (int, number of components left after decomposition, default=2)")
-		print("      option (LLE): nneighbors (int, number of neighbors in LLE graph, default=10)")
-		print("      option (LLE): LLEmethod (methods used in LLE, choosen from 'standard', 'modified', 'hessian' and 'ltsa',\
-									 default='standard')")
-		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
-		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
-You can split the original dataset into several parts and use multi-processors to deal with them.")
-		print("Help End. Exit.")
-		return
-	sys.path.append(__file__.split("/image/classify.py")[0] + '/analyse')
+def cluster_fSpec(dataset, mask=None ,low_filter=0.3, decomposition='SVD', ncomponent=2, nneighbors=10, LLEmethod='standard'):
 	if decomposition not in ['LLE', 'SVD', 'SpecEM']:
 		raise RuntimeError("I can't recognize the decomposition method.")
 	if decomposition=="LLE" and LLEmethod not in ['standard', 'modified', 'hessian','ltsa']:
@@ -80,12 +66,13 @@ You can split the original dataset into several parts and use multi-processors t
 	print("\nStart normalization ...")
 	center_data = (fdataset.shape[1]/2, fdataset.shape[2]/2)
 	fdataset = fdataset[:, center_data[0]-rcenter[0]:center_data[0]+rcenter[0], center_data[1]-rcenter[1]:center_data[1]+rcenter[1]]
+	fmask = mask[center_data[0]-rcenter[0]:center_data[0]+rcenter[0], center_data[1]-rcenter[1]:center_data[1]+rcenter[1]]
 	center_data = (fdataset.shape[1]/2.0, fdataset.shape[2]/2.0)
 	saxs_data = saxs.cal_saxs(fdataset)
-	saxs_intens = radp.radial_profile_2d(saxs_data, center_data)
+	saxs_intens = radp.radial_profile_2d(saxs_data, center_data, fmask)
 	dataset_norm = np.zeros(fdataset.shape)
 	for ind,pat in enumerate(fdataset):
-		pat_normed = radp.radp_norm_2d(saxs_intens, pat, center_data)
+		pat_normed = radp.radp_norm_2d(saxs_intens[:,1], pat, center_data, fmask)
 		dataset_norm[ind] = pat_normed
 		sys.stdout.write("Processing " + str(ind) + "/" + str(len(fdataset)) + " ...\r")
 		sys.stdout.flush()
@@ -114,27 +101,9 @@ You can split the original dataset into several parts and use multi-processors t
 	return dataset_decomp,label
 
 
-def cluster_fTSNE(dataset, low_filter=0.3, no_dims=2, perplexity=50, use_pca=True, initial_dims=50, max_iter=500, theta=0.5, randseed=-1, verbose=False):
+def cluster_fTSNE(dataset, mask=None, low_filter=0.3, no_dims=2, perplexity=20, use_pca=True, initial_dims=50, max_iter=500, theta=0.5, randseed=-1, verbose=False):
 	import os
 	import gc
-	if type(dataset)==str and dataset=="help":
-		print("This function is used to do single-nonsingle patterns clustering using TSNE and kmeans")
-		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)")
-		print("      option: low_filter (float 0~1, the percent of area at the frequency center that is used for clustering, default=0.3)")
-		print("      option (TSNE): no_dims (+int, dimensions after decomposition, default=2)")
-		print("      option (TSNE): perplexity (+int, perlexity value to evaluate P(i|j) in TSNE, default=50)")
-		print("      option (TSNE): use_pca (bool, whether to use PCA to generate initiate features, default=True)")
-		print("      option (TSNE): initial_dims (+int, output dimensions of inititate PCA, ignored if use_pca=False, default=50)")
-		print("      option (TSNE): max_iter (+int, max iterations, default=1000, suggested >500)")
-		print("      option (TSNE): theta (0~1 float, the speed vs accuracy trade-off parameter, theta=1 means highest speed, default=0.5)")
-		print("      option (TSNE): randseed (int, >=0 use 'randseed' as initiate value's generating seed, <0 use current time as random seed, default=-1)")
-		print("      option (TSNE): verbose (default=False)")
-		print("    -> Return: list, [data_after_decomposition, predicted_labels]")
-		print("[Notice] The input dataset is not recommended to contain more than 5k patterns, but it's also neccessary to have more than 500 ones.\
-You can split the original dataset into several parts and use multi-processors to deal with them.")
-		print("Help End. Exit.")
-		return
-	sys.path.append(__file__.split("/image/classify.py")[0] + '/analyse')
 	sys.path.append(os.path.join(os.path.dirname(__file__),'bhtsne_source'))
 	import saxs
 	import radp
@@ -158,12 +127,13 @@ You can split the original dataset into several parts and use multi-processors t
 	print("\nStart normalization ...")
 	center_data = (fdataset.shape[1]/2, fdataset.shape[2]/2)
 	fdataset = fdataset[:, center_data[0]-rcenter[0]:center_data[0]+rcenter[0], center_data[1]-rcenter[1]:center_data[1]+rcenter[1]]
+	fmask = mask[center_data[0]-rcenter[0]:center_data[0]+rcenter[0], center_data[1]-rcenter[1]:center_data[1]+rcenter[1]]
 	center_data = (fdataset.shape[1]/2.0, fdataset.shape[2]/2.0)
 	saxs_data = saxs.cal_saxs(fdataset)
-	saxs_intens = radp.radial_profile_2d(saxs_data, center_data)
+	saxs_intens = radp.radial_profile_2d(saxs_data, center_data, fmask)
 	dataset_norm = np.zeros(fdataset.shape)
 	for ind,pat in enumerate(fdataset):
-		pat_normed = radp.radp_norm_2d(saxs_intens, pat, center_data)
+		pat_normed = radp.radp_norm_2d(saxs_intens[:,1], pat, center_data, fmask)
 		dataset_norm[ind] = pat_normed
 		sys.stdout.write("Processing " + str(ind) + "/" + str(len(fdataset)) + " ...\r")
 		sys.stdout.flush()

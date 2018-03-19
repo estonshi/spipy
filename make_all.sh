@@ -78,6 +78,9 @@ then
 	chmod u+x make_data_MAC
 fi
 
+echo "==> install packages"
+pip install mrcfile
+
 echo "==> others"
 cd $root_folder/phase
 chmod u+x ./template_2d/new_project ./template_3d/new_project
@@ -85,6 +88,9 @@ cd $root_folder/image/qlist_dir
 chmod u+x ./gen_quat
 
 # make soft link
-ln -fs $root_folder ${Ana_path%/bin/python*}/lib/python2.7/site-packages/spipy
+if [ ! -d "${Ana_path%/bin/python*}/lib/python2.7/site-packages/spipy" ]
+then
+	ln -fs $root_folder ${Ana_path%/bin/python*}/lib/python2.7/site-packages/spipy
+fi
 
 echo "Complete!"
