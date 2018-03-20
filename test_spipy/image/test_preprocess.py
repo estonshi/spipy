@@ -15,7 +15,7 @@ if __name__ == "__main__":
 	print("\n(1) test preprocess.hit_finding")
 	# simulate background
 	background = np.random.poisson(1,data.shape[1:])
-	hits = preprocess.hit_find(dataset=data, background=background, radii_range=[10, 100], mask=mask, cut_off=None)
+	hits = preprocess.hit_find(dataset=data, background=background, radii_range=[10, 100], mask=mask, cut_off=10)
 	print("Predicted hit pattern index: " + str(np.where(hits==1)[0]))
 
 	# test preprocess.fix_artifacts
