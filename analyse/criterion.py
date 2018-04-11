@@ -30,6 +30,12 @@ def help(module):
 		print("              F2 ( the second voxel model, 3d numpy.array)")
 		print("              rlist ( list/array, radius of shells)")
 		print("    -> Output: rs ( np.array, the same shape with rlist )")
+	elif module=="Pearson_cc":
+		print("Calculate pearson correlation coefficient between two arrays")
+		print("    -> Input: exp_d ( the first array, numpy.array, dimension=N)")
+		print("              ref_d ( the second array, same shape with exp_d)")
+		print("      option: axis ( default is -1, using the last dimension to calculate cc, if not -1 then use all dimensions)")
+		print("    -> Output: pearsoncc ( numpy array, dimension = N-1)")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -76,5 +82,19 @@ def r_split(F1, F2, rlist):
 	for ind,shell in enumerate(shells):
 		shell_f1 = F1[shell[:,0],shell[:,1],shell[:,2]] + 1e-15
 		shell_f2 = F2[shell[:,0],shell[:,1],shell[:,2]] + 1e-15
-		rs[ind] = 2 * np.sum(np.abs(np.abs(F1) - np.abs(F2))) / np.sum(np.abs(F1) + np.abs(F2))
+		rs[ind] = np.sqrt(2) * np.sum(np.abs(np.abs(F1) - np.abs(F2))) / np.sum(np.abs(F1) + np.abs(F2))
 	return rs
+
+def Pearson_cc(exp_d, ref_d, axis=-1):
+	if exp_d.shape != ref_d.shape:
+		raise RuntimeError("exp_d and ref_d should be in the same size!")
+	if axis == -1 and len(exp_d.shape)>1:
+		new_shape = list(ref_d.shape)[:-1] + [1]
+		mean_exp = np.mean(exp_d,axis=-1).reshape(new_shape)
+		mean_ref = np.mean(ref_d,axis=-1).reshape(new_shape)
+		numerator = np.sum((exp_d - mean_exp) * (ref_d - mean_ref) , axis=-1)
+		dominator = np.sqrt(np.sum((exp_d - mean_exp)**2, axis=-1) * np.sum((ref_d - mean_ref)**2, axis=-1))
+	else:
+		numerator = np.sum((exp_d - np.mean(exp_d)) * (ref_d - np.mean(ref_d)))
+		dominator = np.sqrt(np.sum((exp_d - np.mean(exp_d))**2) * np.sum((ref_d - np.mean(ref_d))**2))
+	return numerator/dominator

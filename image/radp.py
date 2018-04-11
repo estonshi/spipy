@@ -55,14 +55,14 @@ def help(module):
 
 
 def radial_profile_2d(data, center, mask=None):
-	center = np.round(center)
-	x, y = np.indices((data.shape))
-	r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
-	r = r.astype(np.int)
 	if mask is not None:
 		maskdata = data * (1-mask)
 	else:
 		maskdata = data
+	center_0 = np.round(center)
+	x, y = np.indices((data.shape))
+	r = np.sqrt((x - center_0[0])**2 + (y - center_0[1])**2)
+	r = r.astype(np.int)
 
 	tbin = np.bincount(r.ravel(), maskdata.ravel())
 	nr = np.bincount(r.ravel())
@@ -78,14 +78,14 @@ def radial_profile_2d(data, center, mask=None):
 	return np.vstack([r_pixel,radialprofile]).T
 
 def radial_profile_3d(data, center, mask=None):
-	center = np.round(center)
-	x, y, z = np.indices((data.shape))
-	r = np.sqrt((x-center[0])**2 + (y-center[1])**2 +(z-center[2])**2)
-	r = r.astype(np.int)
 	if mask is not None:
 		maskdata = data * (1-mask)
 	else:
 		maskdata = data
+	center_0 = np.round(center)
+	x, y, z = np.indices((data.shape))
+	r = np.sqrt((x-center_0[0])**2 + (y-center_0[1])**2 +(z-center_0[2])**2)
+	r = r.astype(np.int)
 
 	tbin = np.bincount(r.ravel(),maskdata.ravel())
 	nr = np.bincount(r.ravel())
@@ -119,9 +119,9 @@ def shells_3d(rads, data_shape, center):
 	return re
 
 def radp_norm_2d(ref_Iq, data, center, mask=None):
-	center = np.round(center)
+	center_0 = np.round(center)
 	x, y = np.indices((data.shape))
-	r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+	r = np.sqrt((x - center_0[0])**2 + (y - center_0[1])**2)
 	r = r.astype(np.int)
 	if mask is not None:
 		maskdata = data * (1-mask)
@@ -151,9 +151,9 @@ def radp_norm_2d(ref_Iq, data, center, mask=None):
 	return newdata
 
 def radp_norm_3d(ref_Iq, data, center, mask=None):
-	center = np.round(center)
+	center_0 = np.round(center)
 	x, y, z = np.indices((data.shape))
-	r = np.sqrt((x-center[0])**2 + (y-center[1])**2 +(z-center[2])**2)
+	r = np.sqrt((x-center_0[0])**2 + (y-center_0[1])**2 +(z-center_0[2])**2)
 	r = r.astype(np.int)
 	if mask is not None:
 		maskdata = data * (1-mask)

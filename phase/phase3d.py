@@ -93,12 +93,11 @@ def new_project(data_path, path=None, name=None):
 	config.read(os.path.join(_workpath, 'config.ini'))
 	config.set('output', 'path', _workpath)
 	config.set('input', 'fnam', os.path.join(_workpath,'data.bin'))
-	with open(os.path.join(_workpath, 'config.ini'), 'w') as f:
-		config.write(f)
 	# now load data
 	if data_path.split('.')[-1] == 'npy':
 		data = np.load(data_path)
 		data.tofile(_workpath+'/ori_intens/intensity.bin')
+		config.set('input', 'dtype', str(data.dtype))
 	elif data_path.split('.')[-1] == 'bin':
 		cmd = 'cp ' + data_path + ' ' + _workpath + '/ori_intens/intensity.bin'
 		subprocess.check_call(cmd, shell=True)
@@ -106,8 +105,13 @@ def new_project(data_path, path=None, name=None):
 		import scipy.io as sio
 		dfile = sio.loadmat(data_path)
 		data = dfile.values()[0]
+		data.tofile(_workpath+'/ori_intens/intensity.bin')
+		config.set('input', 'dtype', str(data.dtype))
 	else:
 		raise ValueError('\n Error while loading your data ! Exit\n')
+	# now write config.ini
+	with open(os.path.join(_workpath, 'config.ini'), 'w') as f:
+		config.write(f)
 	cmd = 'ln -fs ' + _workpath + '/ori_intens/intensity.bin ' + _workpath + '/data.bin'
 	subprocess.check_call(cmd, shell=True)
 	print("\nAll work done ! ")

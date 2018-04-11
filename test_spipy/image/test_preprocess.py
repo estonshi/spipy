@@ -1,8 +1,10 @@
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
+import matplotlib.image as mimage
 from spipy.image import preprocess
 import copy
+import sys
 
 if __name__ == "__main__":
 	data = np.load("test_adu.npy")
@@ -34,3 +36,21 @@ if __name__ == "__main__":
 	adu, newdata = preprocess.adu2photon(dataset=data, mask=mask, photon_percent=0.1, nproc=1, transfer=True, force_poisson=False)
 	plt.imshow(np.log(1+newdata[0]))
 	plt.show()
+
+	print("\n(4) test preprocess.fix_artifact_auto")
+	pl = mimage.imread('fix_art_auto.png')
+	plt.imshow(pl)
+	plt.show()
+	sys.exit(0)
+
+	data = np.load("your-data-path")#test_adu.npy")
+	ref = copy.deepcopy(data)
+	newdata = preprocess.fix_artifact_auto(dataset=data, estimated_center=np.array(data[0].shape)/2, njobs=2, mask=mask, vol_of_bins=50)
+	for watch in np.random.choice(data.shape[0],10,replace=False):
+		plt.subplot(1,2,1)
+		plt.imshow(np.log(1+np.abs(ref[watch])))
+		plt.title('Before fix')
+		plt.subplot(1,2,2)
+		plt.imshow(np.log(1+np.abs(newdata[watch])))
+		plt.title('After fix')
+		plt.show()

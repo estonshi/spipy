@@ -11,7 +11,7 @@ def help(module):
 		print("              estimated_center (estimated pattern center, (Cx,Cy))")
 		print("              artifacts (artifact location in pattern, numpy.ndarray, shape=(Na,2))")
 		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
-		print("    -> Return: newdataset (To save RAM, your input dataset is modified directly)")
+		print("    -> Return: dataset (To save RAM, your input dataset is modified directly)")
 		print("[Notice] This function cannot reduce backgroud noise, try preprocess.adu2photon instead")
 		print("Help exit.")
 		return
@@ -39,8 +39,80 @@ def help(module):
 	else:
 		raise ValueError("No module names "+str(module))
 
-def _detect_artifact():
-	pass
+
+def _fix_artifact_auto_single_process(data, label, center, I_prime, mask):
+
+	def radp_flat(I_qphi, pats, center, mask):
+		center_0 = np.round(center)
+		x, y = np.indices((pats.shape[1:]))
+		r = np.sqrt((x - center_0[0])**2 + (y - center_0[1])**2)
+		r = r.astype(np.int)
+		if mask is not None:
+			maskdata = pats * (1-mask)
+		else:
+			maskdata = pats
+		ref_Iq = radp.radial_profile_2d(I_qphi, center_0, mask)
+
+		for ind,rad in enumerate(ref_Iq[:,0]):
+			roi = np.where((r==rad) & (I_qphi>0))
+			maskdata[:,roi[0],roi[1]] = maskdata[:,roi[0],roi[1]] * ref_Iq[ind,1] / I_qphi[roi]
+		return maskdata
+
+	import copy
+	if len(data.shape)!=3:
+		raise RuntimeError("Input data dimension error : dimension=" + str(len(data.shape)))
+	for l in set(label):
+		sbin = np.where(label==l)[0]
+		data_bin = data[sbin]
+		I_qphi = np.mean(data_bin,axis=0)
+		G_tau = np.ones(I_qphi.shape)
+		if mask is not None:
+			I_qphi *= (1-mask)
+			roi = np.where(I_qphi>0)
+			G_tau[roi] = I_prime[roi]*(1-mask[roi])/I_qphi[roi]
+		else:
+			roi = np.where(I_qphi>0)
+			G_tau[roi] = I_prime[roi]/I_qphi[roi]
+		data[sbin] = G_tau * radp_flat(I_qphi, data_bin, center, mask)
+	return data
+
+
+def fix_artifact_auto(dataset, estimated_center, njobs=1, mask=None, vol_of_bins=100):
+	import classify
+	import multiprocessing as mp
+	njobs = abs(int(njobs))
+	dataset[np.isnan(dataset)] = 0
+	dataset[np.isinf(dataset)] = 0
+	dataset[np.where(dataset<0)] = 0
+	center = saxs.frediel_search(np.sum(dataset,axis=0), estimated_center, mask)
+	# calculate intensity distribution
+	print("\nAnalysing spectral distribution ...")
+	num_of_bins = int(np.ceil(len(dataset)/vol_of_bins))
+	_,labels = classify.cluster_fSpec(dataset, mask, decomposition='SpecEM', ncomponent=2, clustering=num_of_bins, njobs=njobs)
+	# fix
+	print("\nFix artifacts ...")
+	I_prime = np.mean(dataset, axis=0)
+	poolbin = np.linspace(0, num_of_bins, njobs+1, dtype=int)
+	pool = mp.Pool(processes = njobs)
+	result = []
+	selected_index_all = []
+	for ind,i in enumerate(poolbin[:-1]):
+		start_label = i
+		end_label = poolbin[ind+1]
+		selection = np.arange(start_label, end_label)
+		selected_index = np.where(np.in1d(labels, selection)==True)[0]
+		data_part = dataset[selected_index]
+		label_part = labels[selected_index]
+		print(" Start process "+str(ind))
+		result.append(pool.apply_async(_fix_artifact_auto_single_process, args=(data_part, label_part, center, I_prime, mask,)))
+		selected_index_all.append(selected_index)
+	pool.close()
+	pool.join()
+	for ind,re in enumerate(result):
+		dataset[selected_index_all[ind]] = re.get()
+	print("Done.")
+	return dataset
+
 
 def fix_artifact(dataset, estimated_center, artifacts, mask=None):
 
@@ -54,11 +126,10 @@ def fix_artifact(dataset, estimated_center, artifacts, mask=None):
 	print("\nAnalysing artifact locations ...")
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
-	dataset = np.abs(dataset)
+	dataset[np.where(dataset<0)] = 0
 	powder = saxs.cal_saxs(dataset)
 	center = np.array(saxs.frediel_search(powder, estimated_center, mask))
 	inv_art_loc = 2*center - artifacts
-	print("Data center : " + str(center))
 	# whether inv_art_loc exceed pattern size
 	normal_inv_art_loc = (inv_art_loc[:,0]<powder.shape[0]).astype(int) & (inv_art_loc[:,0]>=0).astype(int) \
 		& (inv_art_loc[:,1]<powder.shape[1]).astype(int) & (inv_art_loc[:,1]>=0).astype(int)
@@ -97,7 +168,7 @@ def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=2, transfer=True, f
 	no_photon_percent = 1 - photon_percent
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
-	dataset = np.abs(dataset)
+	dataset[np.where(dataset<0)] = 0
 	if mask is not None:
 		mindex = np.where(mask==1)
 		dataset[:,mindex[0],mindex[1]] = 0

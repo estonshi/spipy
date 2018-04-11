@@ -16,16 +16,16 @@ def help(module):
 	elif module=="inten_profile_vaccurate":
 		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
+		print("              mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area)")
 		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
-		print("      option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
 		print("[Notice] We don't recommend you to use this function as it is very slow. Use 'inten_profile_vfast' instead.")
 		return
 	elif module=="inten_profile_vfast":
 		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
 		print("The patterns stored in .h5 file should be a ndarray (num, Nx, Ny)")
 		print("    -> Input: dataset (numpy.ndarray, shape=(Nd,Nx,Ny)) ")
+		print("              mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area)")
 		print("              *exp_param (detd (mm) , lamda (A), det_r (pixel), pixsize (mm))")
-		print("      option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
 		return
 	elif module=="cal_saxs":
 		print("This finction is used to calculate the saxs pattern of an SPI data set")
@@ -103,10 +103,13 @@ def inten_profile_vaccurate(dataset, mask, *exp_param):
 	rofq = np.inf
 	import radp
 	import scipy.ndimage.interpolation as ndint
+	if mask is not None:
+		newmask = np.round(ndint.zoom(mask, 4)).astype(int)
+	else:
+		newmask = None
 	for ind,pat in enumerate(data):
 		newpat = ndint.zoom(pat, 4)
 		newcenter = frediel_search(newpat, [size[0]*2, size[1]*2], mask)
-		newmask = np.round(ndint.zoom(mask, 4)).astype(int)
 		intens_one = radp.radial_profile_2d(newpat, newcenter, newmask)
 		intens.append(intens_one[:,1])
 		rofq = min(rofq, len(intens_one[:,1]))
@@ -128,7 +131,10 @@ def inten_profile_vfast(dataset, mask, *exp_param):
 	import radp
 	import scipy.ndimage.interpolation as ndint
 	newsaxs = newpat = ndint.zoom(saxs, 4)
-	newmask = np.round(ndint.zoom(mask, 4)).astype(int)
+	if mask is not None:
+		newmask = np.round(ndint.zoom(mask, 4)).astype(int)
+	else:
+		newmask = None
 	newcenter = center * 4
 	intens = radp.radial_profile_2d(newsaxs, newcenter, newmask)
 	return np.vstack((qinfo,intens[0:len(qinfo),1])).T
