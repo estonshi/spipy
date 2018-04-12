@@ -7,12 +7,12 @@ if __name__=="__main__":
 		'input|inner_mask' : 4, 'input|outer_mask' : 55, \
 		'input|outer_outer_mask' : 64, 'input|mask_edges' : True, \
 		'phasing|repeats' : 20, 'phasing|iters' : '200ERA 200DM 300ERA', \
-		'phasing_parameters|support_size' : 2000}
+		'phasing_parameters|voxel_number' : 2000}
 	params_optional = {'input|subtract_percentile' : None, 'input|spherical_support' : None, \
-		'phasing_parameters|background' : 'True'}
+		'phasing_parameters|background' : 'True', 'input|init_model' : None}
 
 	print("\nCreate new project ...")
-	phase3d.new_project(data_path='3dvolume.bin', path='./', name='mytest')
+	phase3d.new_project(data_path='3dvolume.bin', mask_path=None, path='./', name='mytest')
 
 	print("\nConfiguring ...")
 	parameters = dict(params_essential, **params_optional)

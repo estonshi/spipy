@@ -14,6 +14,7 @@ def help(module):
 	elif module=="new_project":
 		print("This function is used to create a new project directory at your given path")
 		print("    -> Input: data_path (path of your original intensity data)")
+		print("     *option: mask_path (path of your mask file (.npy file), default=None)")
 		print("     *option: path (create work directory at your give path, default as current dir)")
 		print("     *option: name (give a name to your project, default is an number)")
 		print("[Notice] Your original intensity file should be 3D matrix '.npy' or '.mat', or Dragonfly output '.bin'")
@@ -63,12 +64,14 @@ def use_project(project_path):
 		else:
 			raise ValueError("The project " + temp + " doesn't exists. Exit")
 
-def new_project(data_path, path=None, name=None):
+def new_project(data_path, mask_path=None, path=None, name=None):
 	global _workpath
 
 	code_path = __file__.split('/phase3d.py')[0]
 	if not os.path.exists(data_path):
 		raise ValueError("\nYour data path is incorrect. Try ABSOLUTE PATH. Exit\n")
+	if mask_path is not None and not os.path.exists(mask_path):
+		raise ValueError("\nYour mask path is incorrect. Try ABSOLUTE PATH. Exit\n")
 	if path == None or path == "./":
 		path = os.path.abspath(sys.path[0])
 	else:
@@ -109,6 +112,12 @@ def new_project(data_path, path=None, name=None):
 		config.set('input', 'dtype', str(data.dtype))
 	else:
 		raise ValueError('\n Error while loading your data ! Exit\n')
+	# now load mask
+	if mask_path is not None:
+		cmd = 'cp ' + mask_path + ' ' + _workpath + '/ori_intens/mask.npy'
+		subprocess.check_call(cmd, shell=True)
+		cmd = 'ln -fs ' + _workpath + '/ori_intens/mask.npy ' + _workpath + '/mask.npy'
+		subprocess.check_call(cmd, shell=True)
 	# now write config.ini
 	with open(os.path.join(_workpath, 'config.ini'), 'w') as f:
 		config.write(f)

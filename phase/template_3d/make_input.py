@@ -5,6 +5,7 @@ import sys, os
 import numpy as np
 import ConfigParser
 import subprocess
+import scipy
 
 import phasing3d.utils as utils
 from phasing3d.utils import io_utils
@@ -48,6 +49,15 @@ if __name__ == "__main__":
         beamstop = circle.make_beamstop(diff.shape, params['input']['inner_mask'])
     else :
         beamstop = np.ones_like(diff, dtype=np.bool)
+    # user defined beamstop
+    if params['input']['user_mask'] is not None:
+        print("\n Applying user defined mask.")
+        ubeamstop = np.load(params['input']['user_mask'])
+        if params['input']['padd_to_pow2'] is True : 
+            ubeamstop = zero_pad.zero_pad_to_nearest_pow2(ubeamstop)
+        ubeamstop = ~ubeamstop
+        ubeamstop = np.fft.ifftshift(ubeamstop)
+        beamstop *= ubeamstop
 
     # set the outer pixels to zero
     if params['input']['outer_mask'] is not None :
@@ -84,7 +94,23 @@ if __name__ == "__main__":
     else :
         support = np.ones_like(diff, dtype=np.bool)
 
+    # generate solid known
+    if params['input']['init_model'] is not None:
+        file_name = params['input']['init_model']
+        if os.path.splitext(file_name)[1]=='npy':
+            solid_known = np.load(file_name)
+        elif os.path.splitext(file_name)[1]=='bin' or os.path.splitext(file_name)[1]=='':
+            solid_known = np.fromfile(file_name, dtype=dtype).reshape(shape)
+        elif os.path.splitext(file_name)[1]=='mat':
+            solid_known = scipy.io.loadmat(file_name).values()[0]
+        else:
+            raise RuntimeError('Cannot open your input initial model file')
+        if len(solid_known.shape)!=3:
+            raise RuntimeError('Inital model should be a 3-dimension matrix')
+    else:
+        solid_known = None
+
     # write to file
     print 'writing to file...', params['output']['path']
     io_utils.write_input_h5(params['output']['path'], diff, support, \
-            beamstop, np.ones_like(diff, dtype=(diff[:2, :2] + 1J).dtype), args.config)
+            beamstop, solid_known, args.config)

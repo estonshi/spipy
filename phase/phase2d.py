@@ -93,38 +93,42 @@ def new_project(data_mask_path, path=None, name=None):
 		nid += 1
 		_workpath = os.path.join(path, 'phase2d_' + format(nid, '02d'))
 	cmd = code_path + '/template_2d/new_project ' + _workpath
-	subprocess.call(cmd, shell=True)
-	# now load data
-	if data_path[0].split('.')[-1] == 'npy':
-		data = np.load(data_path[0])
-		data.tofile(_workpath+'/ori_intens/pattern.bin')
-	elif data_path[0].split('.')[-1] == 'bin':
-		cmd = 'cp ' + data_path[0] + ' ' + _workpath + '/ori_intens/pattern.bin'
-		subprocess.call(cmd, shell=True)
-	elif data_path[0].split('.')[-1] == 'mat':
-		import scipy.io as sio
-		dfile = sio.loadmat(data_path[0])
-		data = dfile.values()[0]
-		data.tofile(_workpath+'/ori_intens/pattern.bin')
-	else:
-		raise ValueError('\n Error while loading your data ! Exit\n')
-	cmd = 'ln -fs ' + _workpath + '/ori_intens/pattern.bin ' + _workpath + '/data.bin'
-	subprocess.call(cmd, shell=True)
-	# now load mask data
-	if data_path[1] is not None:
-		cmd = 'cp ' + data_path[1] + ' ' + _workpath + '/ori_intens/mask.npy'
-		subprocess.call(cmd, shell=True)
-		cmd = 'ln -fs ' + _workpath + '/ori_intens/mask.npy ' + _workpath + '/mask.npy'
-		subprocess.call(cmd, shell=True)
+	subprocess.check_call(cmd, shell=True)
 	# now change output|path in config.ini
 	config = ConfigParser.ConfigParser()
 	config.read(os.path.join(_workpath, 'config.ini'))
 	config.set('output', 'path', _workpath)
 	config.set('input', 'fnam', os.path.join(_workpath,'data.bin'))
+	# now load data
+	if data_path[0].split('.')[-1] == 'npy':
+		data = np.load(data_path[0])
+		data.tofile(_workpath+'/ori_intens/pattern.bin')
+		config.set('input', 'dtype', str(data.dtype))
+	elif data_path[0].split('.')[-1] == 'bin':
+		cmd = 'cp ' + data_path[0] + ' ' + _workpath + '/ori_intens/pattern.bin'
+		subprocess.check_call(cmd, shell=True)
+	elif data_path[0].split('.')[-1] == 'mat':
+		import scipy.io as sio
+		dfile = sio.loadmat(data_path[0])
+		data = dfile.values()[0]
+		data.tofile(_workpath+'/ori_intens/pattern.bin')
+		config.set('input', 'dtype', str(data.dtype))
+	else:
+		raise ValueError('\n Error while loading your data ! Exit\n')
+	# now make soft link
+	cmd = 'ln -fs ' + _workpath + '/ori_intens/pattern.bin ' + _workpath + '/data.bin'
+	subprocess.check_call(cmd, shell=True)
+	# now load mask data
+	if data_path[1] is not None:
+		cmd = 'cp ' + data_path[1] + ' ' + _workpath + '/ori_intens/mask.npy'
+		subprocess.check_call(cmd, shell=True)
+		cmd = 'ln -fs ' + _workpath + '/ori_intens/mask.npy ' + _workpath + '/mask.npy'
+		subprocess.check_call(cmd, shell=True)
 	if data_path[1] is not None:
 		config.set('input', 'user_mask', os.path.join(_workpath,'mask.npy'))
 	else:
 		config.set('input', 'user_mask', 'None')
+	# write config.ini
 	with open(os.path.join(_workpath, 'config.ini'), 'w') as f:
 		config.write(f)
 	# done

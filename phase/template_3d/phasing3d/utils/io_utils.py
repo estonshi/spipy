@@ -107,7 +107,10 @@ def write_output_h5(path, diff, diff_ret, support, support_ret, \
         f.create_dataset('fidelity error', chunks = efids.shape, data = efids, compression='gzip')
     else :
         f.create_dataset('fidelity error', chunks = emods.shape, data = -np.ones_like(emods), compression='gzip')
-    f.create_dataset('sample init', chunks = solid_unit.shape, data = solid_unit, compression='gzip')
+    if solid_unit is not None:
+        f.create_dataset('sample init', chunks = solid_unit.shape, data = solid_unit, compression='gzip')
+    else:
+        f.create_dataset('sample init', data= 'Randomly initiate')    
     f.create_dataset('sample retrieved', chunks = (1,) + solid_units_ret.shape[1 :], data = solid_units_ret, compression='gzip')
     if PRTF is not None and PRTF_rav is not None :
         f.create_dataset('PRTF', chunks = PRTF.shape, data = PRTF, compression='gzip')

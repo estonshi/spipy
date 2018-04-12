@@ -54,7 +54,7 @@ if __name__=="__main__":
 		qinfo = q.cal_q(float(exparam[0]),float(exparam[1]),float(exparam[2]),float(exparam[3]))
 	else:
 		qinfo = np.arange(qlen)
-	plt.plot(qinfo[:qlen],prtf_rav[:qlen],'-k')
+	plt.plot(qinfo[:qlen],prtf_rav[:qlen,1],'-k')
 	plt.xlabel('q')
 	plt.plot(qinfo[:qlen],np.zeros(qlen)+1/np.e,'r--')
 	plt.title('PRTF radial average')

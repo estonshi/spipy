@@ -95,7 +95,11 @@ def phase(I, support, params, good_pix = None, sample_known = None):
             }
     out = []
 
-    params['phasing_parameters']['O'] = None
+    if sample_known is None:
+        params['phasing_parameters']['O'] = None
+    else:
+        c_dtype = (I[0,0] + 1J * I[0,0]).dtype
+        params['phasing_parameters']['O'] = np.array(sample_known).astype(c_dtype)
     
     params['phasing_parameters']['mask'] = good_pix
     

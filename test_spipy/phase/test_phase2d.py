@@ -9,7 +9,7 @@ if __name__=="__main__":
 		'phasing|repeats' : 40, 'phasing|iters' : '300ERA 200DM 300ERA', \
 		'phasing_parameters|support_size' : 200}
 	params_optional = {'input|subtract_percentile' : None, 'input|spherical_support' : None, \
-		'phasing_parameters|background' : 'True'}
+		'phasing_parameters|background' : 'True', 'input|init_model' : None}
 
 	print("\nCreate new project ...")
 	phase2d.new_project(data_mask_path=['pattern.bin','pat_mask.npy'], path='./', name=None)
