@@ -15,6 +15,15 @@ def help(module):
 		print("[Notice] This function cannot reduce backgroud noise, try preprocess.adu2photon instead")
 		print("Help exit.")
 		return
+	elif module=="fix_artifact_auto":
+		print("This function implements another algorithm to fix artifacts, without providing the position of artifacts")
+		print("    -> Input: dataset (FLOAT adu patterns, numpy.ndarray, shape=(Nd,Nx,Ny))")
+		print("              estimated_center (estimated pattern center, (Cx,Cy))")
+		print("     *option: njobs (number of processes to run in parallel, default=1)")
+		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
+		print("     *option: vol_of_bins (the number of similar patterns that will be processed together in a group, default=100)")
+		print("    -> Output: dataset (To save RAM, your input dataset is modified directly)")
+		print("[NOTICE] vol_of_bins is suggested to be 100~200 and the whole dataset is suggested to contain >1k patterns")
 	elif module=="adu2photon":
 		print("This function is used to evaluate adu value per photon and transfer adu to photon")
 		print("    -> Input: dataset ( patterns of adu values, numpy.ndarray, shape=(Nd,Nx,Ny) )")

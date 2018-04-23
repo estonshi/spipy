@@ -23,7 +23,7 @@ def find_atom_types(pdb_file):
             line = line.strip()
             if line[0:4] == "ATOM" or line[0:6] == "HETATM":
                 atom_label = line[-4:].lstrip()
-		if len(atom_label)>2:
+                if len(atom_label)>2:
                     atom_label = atom_label[:len(atom_label)-2]
                 if atom_label not in atoms:
                     atoms.append(atom_label)
@@ -41,6 +41,15 @@ def interp_scattering(aux_dir, elem):
 def find_mass(aux_dir, elem):
     with open(os.path.join(aux_dir, "atom_mass.txt")) as fp:
         lines = [l.strip().split() for l in fp.readlines()]
+        ind = 1
+        for l, m in lines:
+            if l.lower() == elem.lower():
+                return [ind,float(m)]
+            ind += 1
+
+def find_radii(aux_dir, elem):
+    with open(os.path.join(aux_dir, "atom_radii.txt")) as fp:
+        lines = [l.strip().split() for l in fp.readlines()]
         for l, m in lines:
             if l.lower() == elem.lower():
                 return float(m)
@@ -49,7 +58,7 @@ def make_scatt_list(atom_types, aux_dir, eV):
     scatt_list = OrderedDict()
     for elem in atom_types:
         (f0,f1,) = interp_scattering(aux_dir, elem)
-        mass    = find_mass(aux_dir, elem)
+        _,mass   = find_mass(aux_dir, elem)
         scatt_list[elem.upper()] = [float(f0(eV)), mass]
     return scatt_list
 

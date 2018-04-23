@@ -17,6 +17,10 @@ def help(module):
 		print("    -> Input: q (np.ndarray([w,qx,qy,qz]))")
 		print("[Notice] w = cos(the/2) , q? = ? * sin(theta/2). BE CAREFUL of the order!")
 		return
+	elif module=="quat2azi":
+		print("Transfer a quaternion to azimuth angle")
+		print("    -> Input: q (np.ndarray([w,qx,qy,qz]))")
+		print("    -> Output: azi (np.array([theta,x,y,z]))")
 	elif module=="quat2rot":
 		print("This function is used to transfer a quaternion to a 3D rotation matrix")
 		print("    -> Input: q (np.ndarray([w,qx,qy,qz]))")
@@ -59,11 +63,21 @@ def quat_mul(q1, q2):
 def conj(q):
 	return np.array([q[0],-q[1],-q[2],-q[3]])
 
+# transfer between azimuth and quat
+def quat2azi(q):
+	theta = np.arccos(q[0])*2
+	n = np.array(q[1:])/np.sin(theta/2)
+	return np.array([theta,n[0],n[1],n[2]])
+
+def azi2quat(azi):
+	w = np.cos(azi[0]/2)
+	x = np.sin(azi[0]/2) * azi[1:]
+	return np.array([w,x[0],x[1],x[2]])
 # transfer between quat and rotation matrix
 def quat2rot(q):
-	rot_m = np.matrix([[1-2*q[2]**2-2*q[3]**2, 2*q[1]*q[2]+2*q[0]*q[3], 2*q[1]*q[3]-2*q[0]*q[2]],
-			[2*q[1]*q[2]-2*q[0]*q[3], 1-2*q[1]**2-2*q[3]**2, 2*q[2]*q[3]+2*q[0]*q[1]], 
-			[2*q[1]*q[3]+2*q[0]*q[2], 2*q[2]*q[3]-2*q[0]*q[1], 1-2*q[1]**2-2*q[2]**2]])
+	rot_m = np.matrix([[1-2*q[2]**2-2*q[3]**2, 2*q[1]*q[2]-2*q[0]*q[3], 2*q[1]*q[3]+2*q[0]*q[2]],
+			[2*q[1]*q[2]+2*q[0]*q[3], 1-2*q[1]**2-2*q[3]**2, 2*q[2]*q[3]-2*q[0]*q[1]], 
+			[2*q[1]*q[3]-2*q[0]*q[2], 2*q[2]*q[3]+2*q[0]*q[1], 1-2*q[1]**2-2*q[2]**2]])
 	return rot_m
 
 def rot2quat(rot):

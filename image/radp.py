@@ -50,6 +50,7 @@ def help(module):
 		print("    -> Input: data_shape (int, 2 or 3, output dimension)")
 		print("              rad (float/int, radius)")
 		print("    -> Return: index of points inside given radius ( numpy.array, shape=(Np,data_shape))")
+		print("[NOTICE] The diameter of output circle is rad*2+1, set rad<0 if you want None output")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -183,6 +184,8 @@ def radp_norm_3d(ref_Iq, data, center, mask=None):
 	return newdata
 
 def circle(data_shape, rad):
+	if rad<0:
+		return None
 	dsize = data_shape
 	if dsize==3:
 		cube = [2*int(np.ceil(rad)) + 1]*3

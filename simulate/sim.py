@@ -129,7 +129,7 @@ def run_simulation(help = None):
         + ' ' + os.path.join(work_dir,'make_data') + ' ' + os.path.join(work_dir,'make_densities.py')\
         + ' ' + os.path.join(work_dir,'make_detector.py') + ' ' + os.path.join(work_dir,'make_intensities.py')\
         + ' ' + os.path.join(work_dir,'py_src') + ' ' + os.path.join(work_dir,'sim_setup.py')\
-        + ' ' + os.path.join(work_dir,'src')
+        + ' ' + os.path.join(work_dir,'src') + ' ' + os.path.join(work_dir,'__init__*')
     subprocess.check_call(cmd, shell=True)
 
     print("\n== Complete ! ==")

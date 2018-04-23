@@ -47,8 +47,8 @@ def eul2rotm(ea, order):
 				[0, 0, 1]])
 	def Rx(e):
 		return np.array([[1, 0, 0],\
-				[0, np.cos(e), -np.sin(e)],\
-				[0, np.sin(e), np.cos(e)]])
+				[0, np.cos(e), np.sin(e)],\
+				[0, -np.sin(e), np.cos(e)]])
 
 	T = np.diag([1,1,1])
 	for ind,o in enumerate(order):

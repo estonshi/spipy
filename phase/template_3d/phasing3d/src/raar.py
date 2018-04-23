@@ -10,13 +10,13 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-def ERA(I, iters, **args):
+def RAAR(I, iters, **args):
     """
-    Find the phases of 'I' given O using the Error Reduction Algorithm.
+    Find the phases of 'I' given O using the  Relaxed Averaged Alternating Reflections.
     
     Parameters
     ----------
-    I : numpy.ndarray, (N, M, K)
+    I : numpy.ndarray, (N, M)
         Merged diffraction patterns to be phased. 
     
         N : the number of pixels along slowest scan axis of the detector
@@ -26,19 +26,19 @@ def ERA(I, iters, **args):
     iters : int
         The number of ERA iterations to perform.
     
-    O : numpy.ndarray, (N, M, K) 
+    O : numpy.ndarray, (N, M) 
         The real-space scattering density of the object such that:
             I = |F[O]|^2
         where F[.] is the 3D Fourier transform of '.'.     
     
-    support : (numpy.ndarray, None or int), (N, M, K)
+    support : (numpy.ndarray, None or int), (N, M)
         Real-space region where the object function is known to be zero. 
         If support is an integer then the N most intense pixels will be kept at
         each iteration.
     
-    mask : numpy.ndarray, (N, M, K), optional, default (1)
-        The valid detector pixels. Mask[i, j, k] = 1 (or True) when the detector pixel 
-        i, j, k is valid, Mask[i, j, k] = 0 (or False) otherwise.
+    mask : numpy.ndarray, (N, M), optional, default (1)
+        The valid detector pixels. Mask[i, j] = 1 (or True) when the detector pixel 
+        i, j, k is valid, Mask[i, j] = 0 (or False) otherwise.
     
     hardware : ('cpu', 'gpu'), optional, default ('cpu') 
         Choose to run the reconstruction on a single cpu core ('cpu') or a single gpu
@@ -53,11 +53,11 @@ def ERA(I, iters, **args):
 
     Mapper : class, optional, default None
         A mapping class that provides the methods supplied by:
-            phasing_3d.src.mappers.Mapper
+            phasing2d.src.mappers.Mapper
     
     Returns
     -------
-    O : numpy.ndarray, (U, V, K) 
+    O : numpy.ndarray, (U, V) 
         The real-space object function after 'iters' iterations of the ERA algorithm.
     
     info : dict
@@ -71,7 +71,7 @@ def ERA(I, iters, **args):
         
     Notes 
     -----
-    The ERA is the simplest iterative projection algorithm. It proceeds by 
+    The RAAR is the uses a beta prameter to unify ER and HIO algorithm. It proceeds by 
     progressive projections of the exit surface waves onto the set of function that 
     satisfy the:
         modulus constraint : after propagation to the detector the exit surface waves
@@ -84,13 +84,14 @@ def ERA(I, iters, **args):
     The 'projection' operation onto one of these constraints makes the smallest change to the set 
     of exit surface waves (in the Euclidean sense) that is required to satisfy said constraint.
     
+    Here we set beta as 0.8 to best fit real images
     --------
     """
     # set the real and complex data precision
     # ---------------------------------------
     if 'dtype' not in args.keys() :
         dtype   = I.dtype
-        c_dtype = (I[0,0,0] + 1J * I[0, 0, 0]).dtype
+        c_dtype = (I[0,0,0] + 1J * I[0,0,0]).dtype
     
     elif args['dtype'] == 'single':
         dtype   = np.float32
@@ -111,20 +112,17 @@ def ERA(I, iters, **args):
     
     else :
         print 'using default cpu mapper'
-        from mappers import Mapper 
+        from mappers import Mapper
+
+    if isValid('beta', args) :
+        beta = float(args['beta'])
+
+    else:
+        beta = 0.8
     
     eMods     = []
     eCons     = []
 
-    # Set the Mapper for the single mode (default)
-    # ---------------------------------------
-    # this guy is responsible for doing:
-    #   I     = mapper.Imap(modes)   # mapping the modes to the intensity
-    #   modes = mapper.Pmod(modes)   # applying the data projection to the modes
-    #   modes = mapper.Psup(modes)   # applying the support projection to the modes
-    #   O     = mapper.object(modes) # the main object of interest
-    #   dict  = mapper.finish(modes) # add any additional output to the info dict
-    # ---------------------------------------
     mapper = Mapper(I, **args)
     modes  = mapper.modes
 
@@ -136,23 +134,26 @@ def ERA(I, iters, **args):
         
         # modulus projection 
         # ------------------
-        modes = mapper.Pmod(modes)
+        modes_superr = mapper.Psup(modes)
 
-        modes1 = modes.copy()
+        modes_superr = modes_superr * 2 - modes0
+
+        modes_perr = mapper.Pmod(modes_superr)
+
+        modes_perr = modes_perr * 2 - modes_superr
+
+        modes = (modes_perr * 0.5 + modes0 * 0.5) * beta + mapper.Pmod(modes0) * (1-beta)
         
-        # support projection 
-        # ------------------
+        # support projection
         modes = mapper.Psup(modes)
         
         # metrics
-        #modes1 -= modes0
-        #eMod    = mapper.l2norm(modes1, modes0)
         eMod    = mapper.Emod(modes)
         
         modes0 -= modes
         eCon    = mapper.l2norm(modes0, modes)
         
-        if rank == 0 : update_progress(i / max(1.0, float(iters-1)), 'ERA', i, eCon, eMod )
+        if rank == 0 : update_progress(i / max(1.0, float(iters-1)), 'RAAR', i, eCon, eMod )
         
         eMods.append(eMod)
         eCons.append(eCon)

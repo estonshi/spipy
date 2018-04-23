@@ -126,10 +126,13 @@ def phase(I, support, params, good_pix = None, sample_known = None):
         for alg, iters in alg_iters :
             
             if alg == 'ERA':
-               O, info = phasing2d.ERA(I, iters, **params['phasing_parameters'])
+                O, info = phasing2d.ERA(I, iters, **params['phasing_parameters'])
              
             if alg == 'DM':
-               O, info = phasing2d.DM(I,  iters, **params['phasing_parameters'])
+                O, info = phasing2d.DM(I,  iters, **params['phasing_parameters'])
+
+            if alg == 'RAAR':
+                O, info = phasing2d.RAAR(I, iters, **params['phasing_parameters'])
              
             out[j]['O']           = params['phasing_parameters']['O']          = O
             out[j]['eMod']       += info['eMod']

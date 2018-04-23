@@ -86,6 +86,9 @@ def phase_onetime(I, params0, alg_iters, d):
              
         if alg == 'DM':
             O, info = phasing3d.DM(I,  iters, **params['phasing_parameters'])
+
+        if alg == 'RAAR':
+            O, info = phasing3d.RAAR(I,  iters, **params['phasing_parameters'])
              
         out['O']           = params['phasing_parameters']['O']          = O
         out['eMod']       += info['eMod']
