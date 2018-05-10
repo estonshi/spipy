@@ -102,7 +102,7 @@ class _CXIDB():
 		import sys
 		import h5py
 		f = h5py.File(cxifile,'r')
-		groups = f
+		groups = f.keys()
 		depth = 2
 		if stdout!='std':
 			f = open(stdout,'w')
