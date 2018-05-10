@@ -46,7 +46,9 @@ def help(module):
 		print("     #option: high_filter_cut (float between (0,1), which determine the FWHM of high pass filter, larger value means smaller filter width, default=0.3)")
 		print("     #option: power (positive float 0~1, a power conducted on pattern to enhance the contribution of high q data, default=0.7)")
 		print("     #option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
-		print("    -> Output: list, [particle_size(float), auto_correlation_radial_profile(array)]. particle size is not garunteed to be correct, RECOMMOND to watch auto-correlation radial profile and find the location of highest peak, which is the most trustable value")
+		print("    -> Output: list, [particle_size(float), auto_correlation_radial_profile(2darray)]. particle size is not garunteed to be correct, \
+			RECOMMOND to watch auto-correlation radial profile and find the locations of peaks, which are most trustable values of possible particle sizes. \
+			auto_correlation_radial_profile is a 2-d array, where the 1st colum is particle size in nm (if exparam is given) and 2nd colum is the auto-correlation value.")
 		print("[NOTICE] is your give exparam, the output particle_size is in nanometer; otherwise it is in pixels. Auto correlation radial profile is in pixels")
 	else:
 		raise ValueError("No module names "+str(module))
@@ -191,7 +193,7 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 	# auto correlation
 	auto_coor = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(saxs_filtered**power))))
 	# detect particle size
-	radp_auto_coor = radp.radial_profile_2d(auto_coor, center)[:,1]
+	radp_auto_coor = radp.radial_profile_2d(auto_coor, np.array(auto_coor.shape)/2.0)[:,1]
 	# find peak
 	derive = (radp_auto_coor[1:] - radp_auto_coor[:-1])/radp_auto_coor[:-1]
 	peak = np.argmax(derive) + 1
@@ -199,9 +201,14 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 		try:
 			import q
 			param = np.array(exparam.split(',')).astype(float)
-			q = q.cal_q(param[0], param[1], csaxs.shape[0], param[2])
+			q = q.cal_q(param[0], param[1], len(radp_auto_coor), param[2])
+			print("resolution : "+str(1.0/q[-1])+" nm")
 			peak = peak * 1.0/q[-1]
+			sizes = 1.0/q[-1] * np.arange(len(radp_auto_coor))
 		except:
 			print('error')
 			peak = np.argmax(derive) + 1
-	return [peak, radp_auto_coor]
+			sizes = np.arange(len(radp_auto_coor))
+	else:
+		sizes = np.arange(len(radp_auto_coor))
+	return [peak, np.vstack([sizes, radp_auto_coor]).T]

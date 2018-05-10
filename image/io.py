@@ -30,7 +30,7 @@ def writeccp4(volume, save_file):
 
 	vold = np.nan_to_num(volume)
 	vold = np.float32(vold)
-	with mrcfile.new(save_file) as mrcf:
+	with mrcfile.new(save_file, overwrite=True) as mrcf:
 		mrcf.set_data(vold)
 		mrcf.update_header_from_data()
 
@@ -86,9 +86,32 @@ def pdb2density(pdb_file, resolution):
 
 	return box
 
-def readCXI(cxi_file):
-	pass
+class _CXIDB():
 
-    
+	def print_path(self, groups, depth):
+		for g in groups:
+			if str(type(g)).split('.')[-2]=="group":
+				children = g.keys()
+				self.print_path(children, depth+2)
+			elif str(type(g)).split('.')[-2]=="dataset":
+				print(" "*depth+"|--"+g)
+			else:
+				continue
 
+	def parser(self, cxifile, stdout='std'):
+		import sys
+		f = h5py.File(cxifile,'r')
+		groups = f
+		depth = 2
+		if stdout!='std':
+			f = open(stdout,'w')
+			oldstd = sys.stdout
+			sys.stdout = f
+		print(cxifile)
+		self.print_path(groups, depth)
+		if stdout!='std':
+			sys.stdout = oldstd
 
+def cxi_parser(cxifile, out='std'):
+	cxidb = _CXIDB()
+	cxidb.parser(cxifile, out)

@@ -21,6 +21,10 @@ def help(module):
 		print("Transfer a quaternion to azimuth angle")
 		print("    -> Input: q (np.ndarray([w,qx,qy,qz]))")
 		print("    -> Output: azi (np.array([theta,x,y,z]))")
+	elif module=="azi2quat":
+		print("Transfer a azimuth angle to quaternion")
+		print("    -> Input: azi (np.array([theta,x,y,z]))")
+		print("    -> Output: q (np.ndarray([w,qx,qy,qz]))")
 	elif module=="quat2rot":
 		print("This function is used to transfer a quaternion to a 3D rotation matrix")
 		print("    -> Input: q (np.ndarray([w,qx,qy,qz]))")
