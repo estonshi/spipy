@@ -17,6 +17,11 @@ def help(module):
 		print("    -> Input: pdb_file ( str, the path of pdb file )")
 		print("              resolution ( float, the resolution of density map, in Angstrom )")
 		print("    -> Output: densitymap ( numpy.3darray, voxel model of electron density map )")
+	elif module=="cxi_parser":
+		print("Print cxi inner path structures")
+		print("    -> Input: cxifile ( str, cxi file path )")
+		print("      option: out ( str, give 'std' for terminal print or give a file path to redirect to that file)")
+		print("    -> Output: None")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -88,13 +93,15 @@ def pdb2density(pdb_file, resolution):
 
 class _CXIDB():
 
-	def print_path(self, groups, depth):
-		for g in groups:
+	def print_path(self, d, groups, depth):
+		for gname in groups:
+			g = d[gname]
 			if str(type(g)).split('.')[-2]=="group":
+				print(" "*depth+"|--"+gname)
 				children = g.keys()
-				self.print_path(children, depth+2)
+				self.print_path(g, children, depth+3)
 			elif str(type(g)).split('.')[-2]=="dataset":
-				print(" "*depth+"|--"+g)
+				print(" "*depth+"|--"+gname)
 			else:
 				continue
 
@@ -103,15 +110,16 @@ class _CXIDB():
 		import h5py
 		f = h5py.File(cxifile,'r')
 		groups = f.keys()
-		depth = 2
+		depth = 3
 		if stdout!='std':
-			f = open(stdout,'w')
+			nf = open(stdout,'w')
 			oldstd = sys.stdout
-			sys.stdout = f
+			sys.stdout = nf
 		print(cxifile)
-		self.print_path(groups, depth)
+		self.print_path(f, groups, depth)
 		if stdout!='std':
 			sys.stdout = oldstd
+			nf.close()
 		f.close()
 
 def cxi_parser(cxifile, out='std'):
