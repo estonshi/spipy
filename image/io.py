@@ -100,6 +100,7 @@ class _CXIDB():
 
 	def parser(self, cxifile, stdout='std'):
 		import sys
+		import h5py
 		f = h5py.File(cxifile,'r')
 		groups = f
 		depth = 2
@@ -111,6 +112,7 @@ class _CXIDB():
 		self.print_path(groups, depth)
 		if stdout!='std':
 			sys.stdout = oldstd
+		f.close()
 
 def cxi_parser(cxifile, out='std'):
 	cxidb = _CXIDB()
