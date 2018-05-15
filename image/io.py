@@ -22,6 +22,12 @@ def help(module):
 		print("    -> Input: cxifile ( str, cxi file path )")
 		print("      option: out ( str, give 'std' for terminal print or give a file path to redirect to that file)")
 		print("    -> Output: None")
+	elif module=="xyz2pdb":
+		print("Write 3D xyz-coordinates to a pdb file")
+		print("    -> Input: xyz_array ( numpy.2darray, shape=(Np,3), colums from the 1st to 3rd is x,y,z coordinates )")
+		print("              atom_type ( list, which atoms would like to write in th file. If there is only one item, then all atoms are the same; otherwise you should give a list containing the same number of atom types with the xyz_length. For example, you can either give ['C'] or ['C','H','H','O','H'] for a 5-atom pdb file. No matter upper or lower case)")
+		print("              save_file ( str, the complete path of the file that you want to save these information to )")
+		print("    -> Output: None")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -90,6 +96,30 @@ def pdb2density(pdb_file, resolution):
 		R-ext_cen[2]:R+ext_part.shape[2]-ext_cen[2]] = ext_part
 
 	return box
+
+def xyz2pdb(xyz_array, atom_type, save_file="./convert.pdb"):
+	if xyz_array.shape[1]!=3 or len(xyz_array.shape)!=2 or type(atom_type)!=list:
+		raise ValueError('Invalid input data shape/type !')
+	xyz = xyz_array
+	pdb = open(save_file,'w')
+	for ind,line in enumerate(xyz):
+		atom = "%5d" %(ind+1)
+		resi = "%4d" %1
+		x = "%+8.3f" %line[0]
+		y = "%+8.3f" %line[1]
+		z = "%+8.3f" %line[2]
+		occup = "%6.2f" %1.0
+		t = "%6.2f" %1.0
+		if len(atom_type)==1:
+			atype = "%-2s" %(atom_type[0].upper())
+		elif len(atom_type)==xyz_array.shape[0]:
+			atype = "%-2s" %(atom_type[ind].upper())
+		else:
+			raise ValueError("length of atom_type does not match length of xyz_array")
+		content = 'ATOM'+'  '+atom+'  '+atype+'  '+'ALA'+'  '+resi+\
+					'    '+x+y+z+occup+t+'          '+atype+'\n'
+		pdb.writelines(content)
+	pdb.close()
 
 class _CXIDB():
 
