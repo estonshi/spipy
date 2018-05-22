@@ -16,7 +16,7 @@ def help(module):
 	elif module=="oversamp_rate":
 		print("This function calculates oversampling rate")
 		print("    -> Input: sample_size ( diameter of your experiment sample (nm) )")
-		print("              detd (mm) , lamda (A), det_r (pixel), pixsize (mm)")
+		print("              detd (mm) , lamda (A), pixsize (mm)")
 		print("    -> Output: float")
 	else:
 		raise ValueError("No module names "+str(module))

@@ -37,7 +37,7 @@ class simulation():
 					'parameters|detsize' : 128, 'parameters|pixsize' : 0.3, \
 					'parameters|stoprad' : 0, 'parameters|polarization' : 'x', \
 					'make_data|num_data' : 100, 'make_data|fluence' : 1e14, \
-					'make_data|scatter_factor' : False}
+					'make_data|scatter_factor' : False, 'make_data|ram_first' : True}
 	euler = None  # alpha 0,2pi ; beta 0,pi ; gamma 0,2pi  shape=(Ne,3) [intrisinc]
 	order = None  # rotation order 'zxz','zyz',...
 	atoms = {'coordinate':None, 'index':None} # (angstrom) coordinate.shape=(Na,3)
@@ -185,13 +185,17 @@ class simulation():
 		return new_atoms
 
 	def generate_pattern(self, euler_angles, patt):
+		import psutil
+		import time
+		import gc
+
 		if self.order is None or self.atoms['index'] is None:
 			raise RuntimeError('Please configure and generate euler first!')
 		# get parameters
 		det_l = self.config_param['parameters|detsize']
-		det_d = self.config_param['parameters|detd']
-		det_ps = self.config_param['parameters|pixsize']
-		det_lambda = self.config_param['parameters|lambda']
+		det_d = np.float32(self.config_param['parameters|detd'])
+		det_ps = np.float32(self.config_param['parameters|pixsize'])
+		det_lambda = np.float32(self.config_param['parameters|lambda'])
 		ati = self.atoms['index']
 		ati = ati.reshape((len(ati),1)).astype(int)
 		# calculate detector information
@@ -201,33 +205,54 @@ class simulation():
 		dety = dety.flatten()
 		if self.config_param['make_data|scatter_factor'] is True:
 			pix_r = np.sqrt((detx-det_cen)**2 + (dety-det_cen)**2).astype(int)
-			self.scatt = self.get_scatt(self.atoms['index'], pix_r)    # scattering factor, shape=(max(atom_index)+1,max(pix_r)+1)
+			scatt = self.get_scatt(self.atoms['index'], pix_r)  # scattering factor, shape=(max(atom_index)+1,max(pix_r)+1)
 		else:
-			self.scatt = ati
+			scatt = ati
 		screen_xy = np.array([detx-det_cen, dety-det_cen]).T * det_ps   # here in mm
 		screen_xyz = np.hstack([screen_xy, np.zeros((det_l**2,1))+det_d])        # here in mm
 		k_prime = screen_xyz/np.linalg.norm(screen_xyz,axis=1).reshape((len(screen_xyz),1)) # here no unit
 		dk = k_prime - self.k0    # dk.shape=(Nk,3) the value of dk of every pixel on detector, no unit
+
 		# now start loop
 		for ind,euler_angle in enumerate(euler_angles):
-			print('generating '+str(ind+1)+'th patterns')
+			print('\ngenerating '+str(ind+1)+'th patterns')
+			time0 = time.time()
 			Natoms = self.rotate_mol(euler_angle)
 			dr = Natoms['coordinate']    # dr.shape=(Nr,3) the position vector of atoms, in angstrom
-			# forced to use cblas lib to accelerate
-			gemm=get_blas_funcs("gemm",[dr,dk.T])
-			exp_up = -1*2*np.pi/det_lambda*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
-			pat = ne.evaluate('exp(1j*exp_up)')
-			if self.config_param['make_data|scatter_factor'] is True:
-				pat = pat * self.scatt[ati, pix_r]
+
+			pat = np.zeros(len(dk),dtype=np.complex64)
+			if self.config_param['make_data|ram_first']:
+				# forced to use cblas lib to accelerate
+				gemm = get_blas_funcs("gemm",[dr,dk[0].reshape((3,1))])
+				for ii,dkk in enumerate(dk):
+					temp = np.complex64(1j)*-1*2*np.pi/det_lambda*gemm(1,dr,dkk.reshape((3,1)))    # matrix shape=(Nr,1)
+					temp = ne.evaluate('exp(temp)')
+					if self.config_param['make_data|scatter_factor'] is True:
+						temp *= scatt[ati,pix_r[ii]].reshape(temp.shape)
+					else:
+						temp *= scatt
+					pat[ii] = np.sum(temp)
+				print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
 			else:
-				pat = pat * self.scatt
-			pat = np.sum(pat,axis=0)
+				# forced to use cblas lib to accelerate
+				gemm = get_blas_funcs("gemm",[dr.astype(np.float32),dk.T.astype(np.float32)])
+				pat = np.complex64(1j)*-1*2*np.pi/det_lambda*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
+				pat = ne.evaluate('exp(pat)')
+
+				if self.config_param['make_data|scatter_factor'] is True:
+					pat *= scatt[ati, pix_r]
+				else:
+					pat *= scatt
+				print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
+				pat = np.sum(pat,axis=0)
 			pat = pat.reshape((det_l, det_l))
 			pat = np.abs(pat)**2
 			# evaluate adu
-			adu = self.config_param['make_data|fluence'] * 12398.419 / det_lambda / 1e12
+			adu = np.float32(self.config_param['make_data|fluence'] * 12398.419 / det_lambda / 1e12)
 			patt[ind] = pat * adu/np.sum(pat)
-			print('Done.')
+			del pat
+			gc.collect()
+			print('Done. Time (s): '+str(time.time()-time0))
 		return patt
 
 	def assemble(self):
