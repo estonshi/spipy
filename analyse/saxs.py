@@ -183,7 +183,7 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 	# high pass filter
 	csaxs, cmask = centering(saxs, estimated_center, mask)
 	center = np.array(csaxs.shape)/2
-	Iq = radp.radial_profile_2d(csaxs, center, cmask)
+	Iq = radp.radial_profile_2d(csaxs, center, cmask)[:,1]
 	cut = Iq.max()*high_filter_cut
 	width = np.where(Iq>cut)[0][-1]
 	x, y = grid(csaxs)
