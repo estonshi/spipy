@@ -143,7 +143,7 @@ def get_slice(model, quaternions, det_size, det_center=None, mask=None):
 		else:
 			this_slice[ind] = temp_slice / weights
 
-	if len(np.array(quaternions).shape) == 1:
+	if np.array(quaternions).shape[0] == 1:
 		return this_slice.reshape((ind+1, det_size[0], det_size[1]))[0]
 	else:
 		return this_slice.reshape((ind+1, det_size[0], det_size[1]))
@@ -270,7 +270,10 @@ def poisson_likelihood(W_j, K_k, beta=1, weight=None):
 	Final return is the value weight*(R_jk^beta)
 	'''
 
-	temp = ne.evaluate('sum(K_k*log(W_j)-W_j)')/np.product(W_j.shape)
+	W_j_mask_index = np.where(W_j>0)
+	W_j_ = W_j[W_j_mask_index]
+	K_k_ = K_k[W_j_mask_index]
+	temp = ne.evaluate('sum(K_k_*log(W_j_)-W_j_)')/np.product(W_j_.shape)
 	if weight is not None:
 		R_jk = ne.evaluate('exp(temp*beta)*weight')
 	else:
