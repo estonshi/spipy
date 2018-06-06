@@ -1,6 +1,7 @@
-__all__ = ['emc']
+__all__ = ['emc', 'utils']
 
 import emc
+import utils
 
 def help(module = None):
 	import os
