@@ -95,9 +95,9 @@ def frediel_search(pattern, estimated_center, mask=None):
 # calculate accumulate intensity profile of SPI patterns
 def inten_profile_vaccurate(dataset, mask, *exp_param):
 	import q
-	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
-	if not qinfo:
+	if len(exp_param)<4:
 		raise ValueError("Please be sure to give all exp_param ! Exit")
+	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
 	data = dataset
 	num = data.shape[0]
 	size = data.shape[1:]
@@ -111,7 +111,7 @@ def inten_profile_vaccurate(dataset, mask, *exp_param):
 		newmask = None
 	for ind,pat in enumerate(data):
 		newpat = ndint.zoom(pat, 4)
-		newcenter = frediel_search(newpat, [size[0]*2, size[1]*2], mask)
+		newcenter = frediel_search(newpat, [size[0]*4, size[1]*4], mask)
 		intens_one = radp.radial_profile_2d(newpat, newcenter, newmask)
 		intens.append(intens_one[:,1])
 		rofq = min(rofq, len(intens_one[:,1]))
@@ -193,7 +193,7 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 	# auto correlation
 	auto_coor = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(saxs_filtered**power))))
 	# detect particle size
-	radp_auto_coor = radp.radial_profile_2d(auto_coor, np.array(auto_coor.shape)/2.0)[:,1]
+	radp_auto_coor = radp.radial_profile_2d(auto_coor, center)[:,1]
 	# find peak
 	derive = (radp_auto_coor[1:] - radp_auto_coor[:-1])/radp_auto_coor[:-1]
 	peak = np.argmax(derive) + 1
