@@ -189,11 +189,12 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 	x, y = grid(csaxs)
 	r = np.sqrt((x-center[0])**2 + (y-center[1])**2)
 	filter_s = 1 - np.exp(-(r/width)**16)
-	saxs_filtered = np.abs(np.fft.ifft2( np.fft.fftshift(np.fft.fftshift(np.fft.fft2(csaxs)) * filter_s) ))
+	saxs_filtered = np.abs(np.fft.ifft2( np.fft.ifftshift(np.fft.fftshift(np.fft.fft2(csaxs)) * filter_s) ))
 	# auto correlation
-	auto_coor = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(saxs_filtered**power))))
+	auto_coor = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(saxs_filtered**power))))
 	# detect particle size
-	radp_auto_coor = radp.radial_profile_2d(auto_coor, center)[:,1]
+	auto_coor_center = np.where(auto_coor==auto_coor.max())
+	radp_auto_coor = radp.radial_profile_2d(auto_coor, auto_coor_center)[:,1]
 	# find peak
 	derive = (radp_auto_coor[1:] - radp_auto_coor[:-1])/radp_auto_coor[:-1]
 	peak = np.argmax(derive) + 1
@@ -201,8 +202,9 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 		try:
 			import q
 			param = np.array(exparam.split(',')).astype(float)
-			q = q.cal_q(param[0], param[1], len(radp_auto_coor), param[2])
-			print("resolution : "+str(1.0/q[-1])+" nm")
+			q_corner = q.cal_q(param[0], param[1], len(radp_auto_coor), param[2])[-1]
+			q = q.cal_q(param[0], param[1], min(auto_coor.shape), param[2])
+			print("resolution : "+str(1.0/q_corner)+" nm")
 			peak = peak * 1.0/q[-1]
 			sizes = 1.0/q[-1] * np.arange(len(radp_auto_coor))
 		except:

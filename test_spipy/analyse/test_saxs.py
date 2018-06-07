@@ -24,9 +24,9 @@ if __name__=="__main__":
 	plt.show()
 
 	print("\nEvaluate particle size using saxs profile...")
-	[estimated, radial_intensity] = saxs.particle_size(saxs=saxs_pat, estimated_center=cen, exparam='578,7.9,0.6',\
-	 high_filter_cut=0.5, power=0.7, mask=mask)
+	[estimated, radial_intensity] = saxs.particle_size(saxs=saxs_pat, estimated_center=cen, exparam='578,7.5,0.6',\
+	 high_filter_cut=0.3, power=0.8, mask=mask)
 	print("estimated particle size : "+str(estimated)+" nm")
-	plt.plot(radial_intensity, 'r-')
-	plt.plot(np.zeros(50)+14, np.linspace(0,0.2,50),'k-')
+	plt.plot(radial_intensity[:,0], radial_intensity[:,1], 'r-')
+	plt.plot(np.zeros(50)+80, np.linspace(0,0.2,50),'k-')
 	plt.show()
