@@ -101,24 +101,27 @@ def fix_artifact_auto(dataset, estimated_center, njobs=1, mask=None, vol_of_bins
 	# fix
 	print("\nFix artifacts ...")
 	I_prime = np.mean(dataset, axis=0)
-	poolbin = np.linspace(0, num_of_bins, njobs+1, dtype=int)
-	pool = mp.Pool(processes = njobs)
-	result = []
-	selected_index_all = []
-	for ind,i in enumerate(poolbin[:-1]):
-		start_label = i
-		end_label = poolbin[ind+1]
-		selection = np.arange(start_label, end_label)
-		selected_index = np.where(np.in1d(labels, selection)==True)[0]
-		data_part = dataset[selected_index]
-		label_part = labels[selected_index]
-		print(" Start process "+str(ind))
-		result.append(pool.apply_async(_fix_artifact_auto_single_process, args=(data_part, label_part, center, I_prime, mask,)))
-		selected_index_all.append(selected_index)
-	pool.close()
-	pool.join()
-	for ind,re in enumerate(result):
-		dataset[selected_index_all[ind]] = re.get()
+	if njobs==1:
+		dataset = _fix_artifact_auto_single_process(dataset, labels, center, I_prime, mask)
+	else:
+		poolbin = np.linspace(0, num_of_bins, njobs+1, dtype=int)
+		pool = mp.Pool(processes = njobs)
+		result = []
+		selected_index_all = []
+		for ind,i in enumerate(poolbin[:-1]):
+			start_label = i
+			end_label = poolbin[ind+1]
+			selection = np.arange(start_label, end_label)
+			selected_index = np.where(np.in1d(labels, selection)==True)[0]
+			data_part = dataset[selected_index]
+			label_part = labels[selected_index]
+			print(" Start process "+str(ind))
+			result.append(pool.apply_async(_fix_artifact_auto_single_process, args=(data_part, label_part, center, I_prime, mask,)))
+			selected_index_all.append(selected_index)
+		pool.close()
+		pool.join()
+		for ind,re in enumerate(result):
+			dataset[selected_index_all[ind]] = re.get()
 	print("Done.")
 	return dataset
 
@@ -171,7 +174,7 @@ def fix_artifact(dataset, estimated_center, artifacts, mask=None):
 		dataset[:, loc[0], loc[1]] = mean_intens
 	return dataset
 
-def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=2, transfer=True, force_poisson=False):
+def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=1, transfer=True, force_poisson=False):
 
 	print("\nEvaluating adu units ...")
 	no_photon_percent = 1 - photon_percent
@@ -193,20 +196,23 @@ def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=2, transfer=True, f
 	if transfer:
 		import multiprocessing as mp
 		print("Transferring adu patterns to photon count patterns ...")
-		result = []
-		partition = range(0, len(dataset), np.ceil(len(dataset)/float(nproc)).astype(int))
-		if len(partition)==nproc:
-			partition.append(len(dataset))
-		pool = mp.Pool(processes = nproc)
-		for i in np.arange(nproc):
-			data_part = dataset[partition[i]:partition[i+1]]
-			result.append(pool.apply_async(_transfer, args=(data_part,no_photon_percent,adu,force_poisson,)))
-			print("Start process " + str(i) + " .")
-		pool.close()
-		pool.join()
-		out = np.zeros(dataset.shape, dtype='i4')
-		for ind,p in enumerate(result):
-			out[partition[ind]:partition[ind+1]] = p.get()
+		if nproc==1:
+			out = _transfer(dataset, no_photon_percent, adu, force_poisson)
+		else:
+			result = []
+			partition = range(0, len(dataset), np.ceil(len(dataset)/float(nproc)).astype(int))
+			if len(partition)==nproc:
+				partition.append(len(dataset))
+			pool = mp.Pool(processes = nproc)
+			for i in np.arange(nproc):
+				data_part = dataset[partition[i]:partition[i+1]]
+				result.append(pool.apply_async(_transfer, args=(data_part,no_photon_percent,adu,force_poisson,)))
+				print("Start process " + str(i) + " .")
+			pool.close()
+			pool.join()
+			out = np.zeros(dataset.shape, dtype='i4')
+			for ind,p in enumerate(result):
+				out[partition[ind]:partition[ind+1]] = p.get()
 		print("Done.\n")
 		return adu, out
 	else:

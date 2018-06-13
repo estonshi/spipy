@@ -43,9 +43,10 @@ if __name__ == "__main__":
 	plt.show()
 	sys.exit(0)
 
-	data = np.load("your-data-path")#test_adu.npy")
+	#test_adu.npy")
+	data = np.load("Your-data-path")
 	ref = copy.deepcopy(data)
-	newdata = preprocess.fix_artifact_auto(dataset=data, estimated_center=np.array(data[0].shape)/2, njobs=2, mask=mask, vol_of_bins=50)
+	newdata = preprocess.fix_artifact_auto(dataset=data, estimated_center=np.array(data[0].shape)/2, njobs=1, mask=mask, vol_of_bins=50)
 	for watch in np.random.choice(data.shape[0],10,replace=False):
 		plt.subplot(1,2,1)
 		plt.imshow(np.log(1+np.abs(ref[watch])))

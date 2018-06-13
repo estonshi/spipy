@@ -24,7 +24,7 @@ def help(module):
 		return
 	elif module=="Sphere_randp":
 		print("This function returns randomly/uniformly ditributed points on spherical surface")
-		print("    -> Input: algo (str, algorithms to use : 'random' or 'uniform')")
+		print("    -> Input: algo (str, algorithms to use : 'random' or 'uniform-1' or 'uniform-2')")
 		print("              radius (positive float, radius of the spherical surface)")
 		print("              num (positive int, how many points do you want)")
 		print("    -> Return: list, contains cartisian description and radius description : ")
@@ -155,10 +155,26 @@ def draw_ori_Df(ori_bin, q_level):
 
 # randomly get points on a spherical surface
 def Sphere_randp(algo, radius, num):
-	import math
 
-	if algo == "uniform":
-		# Spherical Fibonacci Mapping
+	if algo == "uniform-1":
+		# Spherical Fibonacci Lattice
+		# num_points = num
+		fab = (1.0+np.sqrt(5.0))/2.0
+		i = np.linspace(-(num-1),(num-1),num,dtype=int)
+		theta = 2.0*np.pi*i/fab
+		sphi = i/float(num);
+		cphi = np.sqrt((num+i)*(num-i))/num
+		phi = np.arccos(sphi)
+
+		x = radius*cphi*np.sin(theta)
+		y = radius*cphi*np.cos(theta)
+		z = radius*sphi
+
+		return np.vstack([x,y,z]).T, np.vstack([theta,phi]).T
+
+	if algo == "uniform-2":
+		# Modified spherical Fibonacci Mapping
+		# num_points = 4*n^2+2, which will be a slightly different from input "num"
 		class Spherical(object):
 
 			def __init__(self, radial = 1.0, polar = 0.0, azimuthal = 0.0):
@@ -167,10 +183,10 @@ def Sphere_randp(algo, radius, num):
 				self.azimuthal = azimuthal
 		 
 			def toCartesian(self):
-				r = math.sin(self.azimuthal) * self.radial
-				x = math.cos(self.polar) * r
-		 		y = math.sin(self.polar) * r
-				z = math.cos(self.azimuthal) * self.radial
+				r = np.sin(self.azimuthal) * self.radial
+				x = np.cos(self.polar) * r
+		 		y = np.sin(self.polar) * r
+				z = np.cos(self.azimuthal) * self.radial
 				return x, y, z
 
 			def zpolar(self):
@@ -178,14 +194,14 @@ def Sphere_randp(algo, radius, num):
 
 		s = Spherical(radial=np.abs(radius))
 		limit = np.abs(num)
-		n = int(math.ceil(math.sqrt((limit - 2) / 4)))
-		azimuthal = 0.5 * math.pi / n
+		n = int(np.ceil(np.sqrt((limit - 2) / 4)))
+		azimuthal = 0.5 * np.pi / n
 		shell_xyz = np.array([0.0,0.0,0.0])
 		shell_polar = np.array([0.0,0.0])
 		for a in range(-n, n + 1):
 			s.polar = 0
 			size = (n - abs(a)) * 4 or 1
-			polar = 2 * math.pi / size
+			polar = 2 * np.pi / size
 			for i in range(size):
 				shell_xyz = np.vstack((shell_xyz,s.toCartesian()))
 				shell_polar = np.vstack((shell_polar,s.zpolar()))
@@ -198,7 +214,7 @@ def Sphere_randp(algo, radius, num):
 
 		u = (np.random.random(num) - 0.5) * 2
 		# [theta, phi] description
-		phi = np.arcsin(u)
+		phi = np.arccos(u)
 		theta = np.random.random(num) * 2 * np.pi
 		# [x,y,z] description
 		x = radius * np.sqrt(1-u**2) * np.cos(theta)

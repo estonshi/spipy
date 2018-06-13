@@ -35,6 +35,12 @@ def help(module):
 		print("    -> Input : K_ks ( all useful experiment patterns, numpy array, shape=(N,Np), reshape pattern to array or do masking in advance !)")
 		print("               Prob_ks ( probabilities of all useful patterns (after normalizing in every orientation) in orientation j, shape=(N,) )")
 		print("    -> Output: W_j_prime, updated slice in orientation j (flattened), length = K_ks.shape[1]")
+	elif module == 'get_quaternion':
+		print("Calculate quaternions which are uniformly distributed in orientation space (sampling weights is uniform)")
+		print("    -> Input : Num_level ( int, number of output quaternions is 2*Num_level^3 )")
+		print("    -> Output: quaternions, numpy.array, shape=(2*Num_level^3,4)")
+	else:
+		raise ValueError("No module names "+str(module))
 
 
 
@@ -202,6 +208,8 @@ def merge_slice(model, quaternions, slices, weights=None, det_center=None, mask=
 										(slice_coor[2]>=0) & (slice_coor[2]<=model.shape[2]-1) )[0]
 				slice_coor = slice_coor[:, slice_index]       # shape=(3,N')
 				this_slice_flat = slices_flat[ind][slice_index]  # shape=(N',)
+			else:
+				this_slice_flat = slices_flat[ind].flatten()
 		else:
 			if np.ceil(maxR) > np.floor((min(model.shape)-1)/2.0):
 				slice_index = np.where( (slice_coor[0]>=0) & (slice_coor[0]<=model.shape[0]-1) & \
@@ -300,4 +308,28 @@ def maximization(K_ks, Prob_ks):
 
 
 
+def get_quaternion(Num_level):
+	'''
+	Generate quaternions as uniform sampling in rotation space (weights = 1), based on Fibonacci spherical sampling
+
+	Input : Num_level, a integer controlling the number of quaternions
+			The number of output quaternions is 2*Num_level^3
+	'''
+	from spipy.analyse import orientation
+	from spipy.image import quat
+
+	assert Num_level>0, "Num_level should be >0"
+
+	num_vec = 2*Num_level**2
+	vec_n,_ = orientation.Sphere_randp('uniform-1', 1, num_vec)
+	inp_r = np.linspace(0, np.pi*2, Num_level+1)[:Num_level]
+	inp_r = inp_r.reshape((len(inp_r),1))
+	quaternions = np.zeros((2*Num_level**3,4))
+
+	ind = 0
+	for vec in vec_n:
+		for inp in inp_r:
+			quaternions[ind] = quat.azi2quat([inp,vec[0],vec[1],vec[2]])
+			ind += 1
+	return quaternions
 
