@@ -190,7 +190,10 @@ def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=1, transfer=True, f
 		countp[0] = countp[0] - len(np.where(mask==1))
 	sumc = np.cumsum(countp)
 	percentc = sumc/sumc[-1].astype(float)
-	adu = np.where(np.abs(percentc-no_photon_percent)<0.01)[0][0]
+	try:
+		adu = np.where(np.abs(percentc-no_photon_percent)<0.01)[0][0]
+	except:
+		adu = 1
 	print("Estimated adu value is " + str(adu) + ". Done.\n")
 
 	if transfer:
@@ -230,7 +233,10 @@ def _transfer(data, no_photon_percent, adu, force_poisson):
 		countp = np.bincount(np.round(pat.ravel()).astype(int))
 		sumc = np.cumsum(countp)
 		percentc = sumc/sumc[-1].astype(float)
-		adu_mine = np.where(np.abs(percentc-no_photon_percent)<0.01)[0][0]
+		try:
+			adu_mine = np.where(np.abs(percentc-no_photon_percent)<0.01)[0][0]
+		except:
+			adu_mine = 1
 		real_adu = 0.6*adu_mine + 0.4*adu
 		if force_poisson:
 			newp = np.frompyfunc(poisson,1,1)
