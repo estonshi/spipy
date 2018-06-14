@@ -211,7 +211,7 @@ class simulation():
 		screen_xy = np.array([detx-det_cen, dety-det_cen]).T * det_ps   # here in mm
 		screen_xyz = np.hstack([screen_xy, np.zeros((det_l**2,1))+det_d])        # here in mm
 		k_prime = screen_xyz/np.linalg.norm(screen_xyz,axis=1).reshape((len(screen_xyz),1)) # here no unit
-		dk = k_prime - self.k0    # dk.shape=(Nk,3) the value of dk of every pixel on detector, no unit
+		dk = (k_prime - self.k0)/det_lambda   # dk.shape=(Nk,3) the value of dk of every pixel on detector, angstrom^(-1)
 
 		# now start loop
 		for ind,euler_angle in enumerate(euler_angles):
@@ -225,7 +225,7 @@ class simulation():
 				# forced to use cblas lib to accelerate
 				gemm = get_blas_funcs("gemm",[dr,dk[0].reshape((3,1))])
 				for ii,dkk in enumerate(dk):
-					temp = np.complex64(1j)*-1*2*np.pi/det_lambda*gemm(1,dr,dkk.reshape((3,1)))    # matrix shape=(Nr,1)
+					temp = np.complex128(1j)*-1*gemm(1,dr,dkk.reshape((3,1)))    # matrix shape=(Nr,1)
 					temp = ne.evaluate('exp(temp)')
 					if self.config_param['make_data|scatter_factor'] is True:
 						temp *= scatt[ati,pix_r[ii]].reshape(temp.shape)
@@ -236,7 +236,7 @@ class simulation():
 			else:
 				# forced to use cblas lib to accelerate
 				gemm = get_blas_funcs("gemm",[dr.astype(np.float32),dk.T.astype(np.float32)])
-				pat = np.complex64(1j)*-1*2*np.pi/det_lambda*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
+				pat = np.complex128(1j)*-1*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
 				pat = ne.evaluate('exp(pat)')
 
 				if self.config_param['make_data|scatter_factor'] is True:
