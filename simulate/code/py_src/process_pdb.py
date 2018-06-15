@@ -9,7 +9,7 @@ import urllib
 
 def fetch_pdb(pdb_code):
     print pdb_code
-    if os.path.isfile('aux/%s.pdb' % (pdb_code.upper())):
+    if os.path.isfile('aux/%s.pdb' % (pdb_code)):
         pass
     else:
         pdb_string = urllib.urlopen('http://www.rcsb.org/pdb/files/%s.pdb' % pdb_code.upper())

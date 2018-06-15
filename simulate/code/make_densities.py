@@ -21,7 +21,7 @@ if __name__ == "__main__":
         pdb_code    = None
     except read_config.ConfigParser.NoOptionError:
         pdb_code    = read_config.get_filename(args.config_file, 'make_densities', 'pdb_code')
-        pdb_file    = 'aux/%s.pdb' % pdb_code.upper()
+        pdb_file    = 'aux/%s.pdb' % pdb_code
     aux_dir     = os.path.join(args.main_dir, read_config.get_filename(args.config_file, 'make_densities', "scatt_dir"))
     den_file    = os.path.join(args.main_dir, read_config.get_filename(args.config_file, 'make_densities', "out_density_file"))
     to_write    = py_utils.check_to_overwrite(den_file)
