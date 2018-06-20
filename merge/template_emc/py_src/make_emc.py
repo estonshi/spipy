@@ -6,7 +6,7 @@ import sys
 
 if __name__ == '__main__':
 	
-	print('--> Transfer data...')
+	print('--> Read data...')
 
 	readfile = sys.argv[1]
 	path = sys.argv[2]
@@ -23,10 +23,13 @@ if __name__ == '__main__':
 	"""
 	# Read the original exp data file
 	expfile = h5py.File(readfile,'r')
-	exp = expfile[path]
+	exp = expfile[path][...]
+	expfile.close()
 	if not (exp.dtype == np.dtype('int64') or exp.dtype == np.dtype('int32')):
 		raise ValueError("The data type of input file is incorrect. It should be 'int64' or 'int32'")
 	image_size = exp[0].shape
+
+	print("--> Transfer data...")
 
 	# function to get photon events and locations
 	def photondata(expd):
