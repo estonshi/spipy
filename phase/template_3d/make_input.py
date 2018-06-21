@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # user defined beamstop
     if params['input']['user_mask'] is not None:
         print("\n Applying user defined mask.")
-        ubeamstop = np.load(params['input']['user_mask'])
+        ubeamstop = np.load(params['input']['user_mask']).astype(bool)
         if params['input']['padd_to_pow2'] is True : 
             ubeamstop = zero_pad.zero_pad_to_nearest_pow2(ubeamstop)
         ubeamstop = ~ubeamstop
