@@ -225,7 +225,7 @@ class simulation():
 				# forced to use cblas lib to accelerate
 				gemm = get_blas_funcs("gemm",[dr,dk[0].reshape((3,1))])
 				for ii,dkk in enumerate(dk):
-					temp = np.complex128(1j)*-1*gemm(1,dr,dkk.reshape((3,1)))    # matrix shape=(Nr,1)
+					temp = np.complex128(1j)*-1*2*np.pi*gemm(1,dr,dkk.reshape((3,1)))    # matrix shape=(Nr,1)
 					temp = ne.evaluate('exp(temp)')
 					if self.config_param['make_data|scatter_factor'] is True:
 						temp *= scatt[ati,pix_r[ii]].reshape(temp.shape)
@@ -236,7 +236,7 @@ class simulation():
 			else:
 				# forced to use cblas lib to accelerate
 				gemm = get_blas_funcs("gemm",[dr.astype(np.float32),dk.T.astype(np.float32)])
-				pat = np.complex128(1j)*-1*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
+				pat = np.complex128(1j)*-1*2*np.pi*gemm(1,dr,dk.T)    # matrix shape=(Nr,Nk)
 				pat = ne.evaluate('exp(pat)')
 
 				if self.config_param['make_data|scatter_factor'] is True:
