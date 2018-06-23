@@ -16,7 +16,7 @@ if __name__=="__main__":
 	size = prtf.shape
 	prtf_rav = radp.radial_profile_3d(prtf,[size[0]/2,size[1]/2,size[2]/2])
 	sr = np.abs(np.fft.fftshift(f['sample retrieved'][...]))
-	dr = np.abs(np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(sr))))
+	dr = np.abs(np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(sr))))**2
 	d = np.abs(np.fft.fftshift(f['data'][...]))
 	metric = f['convergence metric'][...]
 	mod_error = f['modulus error'][...]
