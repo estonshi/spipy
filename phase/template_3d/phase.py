@@ -7,7 +7,11 @@ import phasing3d
 import phasing3d.utils as utils
 
 import multiprocessing as mp
+from mpi4py import MPI
 
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 def config_iters_to_alg_num(string):
     # split a string like '100ERA 200DM 50ERA' with the numbers
@@ -46,33 +50,31 @@ def out_merge(out, I, good_pix):
     if background is not 0 :
         background = comm.gather(background, root=0)
     
+    if rank == 0 :
     PRTF           = np.abs(np.mean(np.array(PRTF), axis=0))
-    #t, t, PRTF_rav = phasing_3d.src.era.radial_symetry(PRTF)
-    
+
     eMod       = np.array(eMod).reshape((size*eMod[0].shape[0], eMod[0].shape[1]))
     eCon       = np.array(eCon).reshape((size*eCon[0].shape[0], eCon[0].shape[1]))
     O, t       = utils.merge.merge_sols(np.array(O))
     support, t = utils.merge.merge_sols(np.array(support))
     if background is not 0 :
-        background = np.mean(np.array(background), axis=0)
+            background = np.mean(np.array(background), axis=0)
     
-    # get the prft
-    #PRTF, PRTF_rav = utils.merge.PRTF(O, I, background, good_pix)
+    if rank == 0:
+        # get the PSD
+        PSD, PSD_I, PSD_phase = utils.merge.PSD(O, I)
 
-    # get the PSD
-    PSD, PSD_I, PSD_phase = utils.merge.PSD(O, I)
-
-    out_m = out[0]
-    out_m['I'] = np.abs(np.fft.fftn(O))**2
-    out_m['O'] = O
-    out_m['background'] = background
-    out_m['PSD']      = PSD
-    out_m['PSD_I']    = PSD_I
-    out_m['PRTF']     = PRTF
-    out_m['PRTF_rav'] = np.array([0]) #PRTF_rav
-    out_m['eMod']     = eMod
-    out_m['eCon']     = eCon
-    out_m['support']  = support
+        out_m = out[0]
+        out_m['I'] = np.abs(np.fft.fftn(O))**2
+        out_m['O'] = O
+        out_m['background'] = background
+        out_m['PSD']      = PSD
+        out_m['PSD_I']    = PSD_I
+        out_m['PRTF']     = PRTF
+        out_m['PRTF_rav'] = np.array([0]) #PRTF_rav
+        out_m['eMod']     = eMod
+        out_m['eCon']     = eCon
+        out_m['support']  = support
     return out_m
     
 def phase_onetime(I, params0, alg_iters, d):
