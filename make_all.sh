@@ -5,11 +5,12 @@ root_folder=`pwd`
 # check whether there is anaconda installed
 Ana_path=`which python`
 a='anaconda'
-if [[ $Ana_path =~ $a ]]
+b='miniconda'
+if [[ $Ana_path =~ $a ]] || [[ $Ana_path =~ $b ]]
 then
 	echo "Root folder is $root_folder"
 else
-	echo "Use anaconda2 please. Exit."
+	echo "Use anaconda2/miniconda2 please. Exit."
 	exit 1
 fi
 py_version=`conda info | grep python`
@@ -18,7 +19,7 @@ if [[ $py_version =~ $a ]]
 then
 	echo "Anaconda version authorized"
 else
-	echo "Use anaconda2 please. Exit."
+	echo "Your python version is not 2.7. Exit."
 	exit 1
 fi
 
@@ -35,7 +36,7 @@ fi
 if [ $sys = "Darwin" ]
 then
 	nowgcc=`which gcc`
-	echo "I need openmp and MPI support. Do you want to use current gcc [y/n]? : $nowgcc"
+	echo "I need openmp and MPI support. Do you want to use current gcc? : $nowgcc [y/n]"
 	read answer
 	if [ $answer = "n" ]
 	then
@@ -43,6 +44,17 @@ then
 		read mygcc
 	else
 		mygcc=gcc
+	fi
+fi
+# reject conda mpi
+if [ $sys = "Linux" ]
+then
+	nowmpicc=`which mpicc`
+	nowmpirun=`which mpirun`
+	if [ $nowmpicc = "${Ana_path%/bin/python*}/bin/mpicc" ] || [ $nowmpirun = "${Ana_path%/bin/python*}/bin/mpirun" ]
+	then
+		echo "Please don't use MPI in anaconda/miniconda. Exit."
+		exit 1
 	fi
 fi
 
