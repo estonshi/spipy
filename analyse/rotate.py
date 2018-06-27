@@ -120,9 +120,13 @@ def align(fix, mov, grid_unit=[0.3, 0.1], nproc=2, resize=40, order='zxz'):
 	print("order : " + order)
 	print("number of processes : " + str(nproc))
 	print("************START*****************")
+	# preprocess
 	zoom_ratio = float(resize)/fix.shape[0]
 	newfix = interpolation.zoom(fix, zoom_ratio)
 	newmov = interpolation.zoom(mov, zoom_ratio)
+	scaling_f = np.linalg.norm(newfix)/np.linalg.norm(newmov)
+	newmov *= scaling_f
+	# alingment
 	global_rf = 1.0
 	global_ea = None
 	grid_unit = sorted(list(set(grid_unit)), reverse=True)
