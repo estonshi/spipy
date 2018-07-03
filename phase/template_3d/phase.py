@@ -51,14 +51,14 @@ def out_merge(out, I, good_pix):
         background = comm.gather(background, root=0)
     
     if rank == 0 :
-    PRTF           = np.abs(np.mean(np.array(PRTF), axis=0))
+        PRTF       = np.abs(np.mean(np.array(PRTF), axis=0))
 
-    eMod       = np.array(eMod).reshape((size*eMod[0].shape[0], eMod[0].shape[1]))
-    eCon       = np.array(eCon).reshape((size*eCon[0].shape[0], eCon[0].shape[1]))
-    O, t       = utils.merge.merge_sols(np.array(O))
-    support, t = utils.merge.merge_sols(np.array(support))
+        eMod       = np.array(eMod).reshape((size*eMod[0].shape[0], eMod[0].shape[1]))
+        eCon       = np.array(eCon).reshape((size*eCon[0].shape[0], eCon[0].shape[1]))
+        O, t       = utils.merge.merge_sols(np.array(O))
+        support, t = utils.merge.merge_sols(np.array(support))
     if background is not 0 :
-            background = np.mean(np.array(background), axis=0)
+        background = np.mean(np.array(background), axis=0)
     
     if rank == 0:
         # get the PSD
