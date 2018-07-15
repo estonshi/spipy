@@ -10,7 +10,6 @@ import phasing2d.utils as utils
 from phasing2d.utils import io_utils
 from phasing2d.utils import zero_pad
 from phasing2d.utils import circle
-from phasing2d.utils import fitting
 
 if __name__ == "__main__":
     args = io_utils.parse_cmdline_args()
@@ -95,7 +94,6 @@ if __name__ == "__main__":
 
     # generate solid known
     if params['input']['init_model'] is not None:
-        print("\n load init model...")
         file_name = params['input']['init_model']
         if os.path.splitext(file_name)[1]=='.npy':
             solid_known = np.load(file_name)
@@ -107,10 +105,6 @@ if __name__ == "__main__":
             raise RuntimeError('Cannot open your input initial model file')
         if len(solid_known.shape)!=2:
             raise RuntimeError('Inital model should be a 2-dimension matrix')
-        # padd to the nearest power of 2
-        if params['input']['padd_to_pow2'] is True : 
-            print '\n padding...'
-            solid_known = zero_pad.zero_pad_to_nearest_pow2(solid_known)
     else:
         solid_known = None
 

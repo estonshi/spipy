@@ -31,11 +31,9 @@ def out_merge(out, I, good_pix):
         background = np.mean([i['background'] for i in out], axis=0)
     else :
         background = 0
-
-    silent = False
     
     # centre, flip and average the retrievals
-    O, PRTF    = utils.merge.merge_sols(np.array([i['O'] for i in out]), silent)
+    O, PRTF    = utils.merge.merge_sols(np.array([i['O'] for i in out]), True)
     support, t = utils.merge.merge_sols(np.array([i['support'] for i in out]).astype(np.float), True)
        
     eMod    = np.array([i['eMod'] for i in out])
@@ -56,9 +54,9 @@ def out_merge(out, I, good_pix):
         eMod       = np.array(eMod).reshape((size*eMod[0].shape[0], eMod[0].shape[1]))
         eCon       = np.array(eCon).reshape((size*eCon[0].shape[0], eCon[0].shape[1]))
         O, t       = utils.merge.merge_sols(np.array(O))
-        support, t = utils.merge.merge_sols(np.array(support))
-    if background is not 0 :
-        background = np.mean(np.array(background), axis=0)
+        support, t = utils.merge.merge_sols(np.array(support), True)
+        if background is not 0 :
+            background = np.mean(np.array(background), axis=0)
     
     if rank == 0:
         # get the PSD
@@ -71,11 +69,13 @@ def out_merge(out, I, good_pix):
         out_m['PSD']      = PSD
         out_m['PSD_I']    = PSD_I
         out_m['PRTF']     = PRTF
-        out_m['PRTF_rav'] = np.array([0]) #PRTF_rav
+        out_m['PRTF_rav'] = None #PRTF_rav
         out_m['eMod']     = eMod
         out_m['eCon']     = eCon
         out_m['support']  = support
-    return out_m
+    	return out_m
+    else:
+    	return None
     
 def phase_onetime(I, params0, alg_iters, d):
     out = copy.deepcopy(d)
@@ -103,7 +103,7 @@ def phase_onetime(I, params0, alg_iters, d):
     out['support']     = params['phasing_parameters']['support']    = info['support']
     return out
 
-def phase(I, support, params, good_pix = None, sample_known = None, num_processor = 1):
+def phase(I, support, params, good_pix = None, sample_known = None):
     d   = {'eMod' : [],         \
            'eCon' : [],         \
            'O'    : None,       \
@@ -123,12 +123,11 @@ def phase(I, support, params, good_pix = None, sample_known = None, num_processo
     
     if params['phasing_parameters']['support'] is None :
         params['phasing_parameters']['support'] = support
-
-    params0 = copy.deepcopy(params)
     
     alg_iters = config_iters_to_alg_num(params['phasing']['iters'])
         
     # Repeats
+    """
     pool = mp.Pool(processes = num_processor)
     result = []
     for j in range(params['phasing']['repeats']):
@@ -140,26 +139,29 @@ def phase(I, support, params, good_pix = None, sample_known = None, num_processo
     #---------------------------------------------
     for j in range(params['phasing']['repeats']):
         out.append(copy.deepcopy(d))
-        params = copy.deepcopy(params0)
+        params0 = copy.deepcopy(params)
         
         for alg, iters in alg_iters :
             
             if alg == 'ERA':
-               O, info = phasing_3d.ERA(I, iters, **params['phasing_parameters'])
-             
+                O, info = phasing3d.ERA(I, iters, **params0['phasing_parameters'])
+         
             if alg == 'DM':
-               O, info = phasing_3d.DM(I,  iters, **params['phasing_parameters'])
-             
-            out[j]['O']           = params['phasing_parameters']['O']          = O
+                O, info = phasing3d.DM(I,  iters, **params0['phasing_parameters'])
+
+            if alg == 'RAAR':
+                O, info = phasing3d.RAAR(I,  iters, **params0['phasing_parameters'])
+         
+            out[j]['O']           = params0['phasing_parameters']['O']          = O
             out[j]['eMod']       += info['eMod']
             out[j]['eCon']       += info['eCon']
-            
+        
             if 'background' in info.keys():
-                out[j]['background']  = params['phasing_parameters']['background'] = info['background'] * good_pix
+                out[j]['background']  = params0['phasing_parameters']['background'] = info['background'] * good_pix
                 out[j]['B_rav']       = info['r_av']
     
-        out[j]['support']     = params['phasing_parameters']['support']    = info['support']
-    """
+        out[j]['support']     = params0['phasing_parameters']['support']    = info['support']
+
     return out
 
 
@@ -171,7 +173,7 @@ if __name__ == "__main__":
     diff, support, good_pix, sample_known, params = utils.io_utils.read_input_h5(args.input)
 
     out = phase(diff, support, params, \
-                        good_pix = good_pix, sample_known = sample_known, num_processor = args.processor)
+                        good_pix = good_pix, sample_known = sample_known)
 
     out = out_merge(out, diff, good_pix)
     
@@ -179,6 +181,6 @@ if __name__ == "__main__":
     if rank == 0 :
         utils.io_utils.write_output_h5(params['output']['path'], diff, out['I'], support, out['support'], \
                                       good_pix, sample_known, out['O'], out['eMod'], out['eCon'], None,   \
-                                      out['PRTF'], out['PRTF_rav'], out['PSD'], out['PSD_I'], out['B_rav'])
+                                      out['PRTF'], None, out['PSD'], out['PSD_I'], out['B_rav'])
         print("\nDone ! Phasing result is stored in " + params['output']['path'] + '/output.h5\n')
 

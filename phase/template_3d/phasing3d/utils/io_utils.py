@@ -80,7 +80,6 @@ def parse_cmdline_args_phasing():
     parser = argparse.ArgumentParser(prog = 'phase.py', description='phase a merged 3D diffraction volume')
     parser.add_argument('input', type=str, \
                         help="h5 file name of the input file")
-    parser.add_argument('processor', type=int, help="number of processor used")
     args = parser.parse_args()
     return args
 

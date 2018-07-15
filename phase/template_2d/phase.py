@@ -35,7 +35,7 @@ def out_merge(out, I, good_pix):
     if rank == 0: silent = False
     
     # centre, flip and average the retrievals
-    O, PRTF    = utils.merge.merge_sols(np.array([i['O'] for i in out]), silent)
+    O, PRTF    = utils.merge.merge_sols(np.array([i['O'] for i in out]), True)
     support, t = utils.merge.merge_sols(np.array([i['support'] for i in out]).astype(np.float), True)
        
     eMod    = np.array([i['eMod'] for i in out])

@@ -104,13 +104,10 @@ def ERA(I, iters, **args):
     args['c_dtype'] = c_dtype
 
     if isValid('Mapper', args) : 
+        if rank == 0 : print '\nusing user defined mapper'
         Mapper = args['Mapper']
-
-    elif isValid('hardware', args) and args['hardware'] == 'gpu':
-        from mappers_gpu import Mapper 
-    
     else :
-        print 'using default cpu mapper'
+        if rank == 0 : print '\nusing default cpu mapper'
         from mappers import Mapper 
     
     eMods     = []

@@ -105,14 +105,11 @@ def RAAR(I, iters, **args):
     args['c_dtype'] = c_dtype
 
     if isValid('Mapper', args) : 
+        if rank == 0 : print '\nusing user defined mapper'
         Mapper = args['Mapper']
-
-    elif isValid('hardware', args) and args['hardware'] == 'gpu':
-        from mappers_gpu import Mapper 
-    
     else :
-        print 'using default cpu mapper'
-        from mappers import Mapper
+        if rank == 0 : print '\nusing default cpu mapper'
+        from mappers import Mapper 
 
     if isValid('beta', args) :
         beta = float(args['beta'])

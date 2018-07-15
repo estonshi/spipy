@@ -7,7 +7,7 @@ if __name__=="__main__":
 		'input|inner_mask' : 6, 'input|outer_mask' : 64, \
 		'input|outer_outer_mask' : None, 'input|mask_edges' : True, \
 		'phasing|repeats' : 20, 'phasing|iters' : '100RAAR 200DM 200ERA', \
-		'phasing_parameters|support_size' : 200, 'phasing_parameters|beta' : 0.8}
+		'phasing_parameters|support_size' : 100, 'phasing_parameters|beta' : 0.8}
 	params_optional = {'input|subtract_percentile' : None, 'input|spherical_support' : None, \
 		'phasing_parameters|background' : 'True', 'input|init_model' : None}
 

@@ -145,16 +145,11 @@ def DM(I, iters, **args):
     args['c_dtype'] = c_dtype
 
     if isValid('Mapper', args) : 
-        print 'using user defined mapper'
+        if rank == 0 : print '\nusing user defined mapper'
         Mapper = args['Mapper']
-
-    elif isValid('hardware', args) and args['hardware'] == 'gpu':
-        print 'using gpu mapper'
-        from mappers_gpu import Mapper 
-    
     else :
-        print 'using default cpu mapper'
-        from mappers import Mapper 
+        if rank == 0 : print '\nusing default cpu mapper'
+        from mappers import Mapper
     
     eMods     = []
     eCons     = []
@@ -165,7 +160,7 @@ def DM(I, iters, **args):
     modes_sup = mapper.Psup(modes)
 
     if iters > 0  and rank==0:
-        print '\n\nalgrithm progress iteration convergence modulus error'
+        print '\nalgrithm progress iteration convergence modulus error'
     
     for i in range(iters) :
         

@@ -7,11 +7,9 @@ import ConfigParser
 import subprocess
 import scipy
 
-import phasing3d.utils as utils
 from phasing3d.utils import io_utils
 from phasing3d.utils import zero_pad
 from phasing3d.utils import circle
-from phasing3d.utils import fitting
 
 if __name__ == "__main__":
     args = io_utils.parse_cmdline_args()
@@ -52,7 +50,7 @@ if __name__ == "__main__":
     # user defined beamstop
     if params['input']['user_mask'] is not None:
         print("\n Applying user defined mask.")
-        ubeamstop = np.load(params['input']['user_mask']).astype(bool)
+        ubeamstop = np.load(params['input']['user_mask'])
         if params['input']['padd_to_pow2'] is True : 
             ubeamstop = zero_pad.zero_pad_to_nearest_pow2(ubeamstop)
         ubeamstop = ~ubeamstop
@@ -96,22 +94,17 @@ if __name__ == "__main__":
 
     # generate solid known
     if params['input']['init_model'] is not None:
-        print("\n load init model...")
         file_name = params['input']['init_model']
-        if os.path.splitext(file_name)[1]=='.npy':
+        if os.path.splitext(file_name)[1]=='npy':
             solid_known = np.load(file_name)
-        elif os.path.splitext(file_name)[1]=='.bin' or os.path.splitext(file_name)[1]=='':
+        elif os.path.splitext(file_name)[1]=='bin' or os.path.splitext(file_name)[1]=='':
             solid_known = np.fromfile(file_name, dtype=dtype).reshape(shape)
-        elif os.path.splitext(file_name)[1]=='.mat':
+        elif os.path.splitext(file_name)[1]=='mat':
             solid_known = scipy.io.loadmat(file_name).values()[0]
         else:
             raise RuntimeError('Cannot open your input initial model file')
         if len(solid_known.shape)!=3:
             raise RuntimeError('Inital model should be a 3-dimension matrix')
-        # padd to the nearest power of 2
-        if params['input']['padd_to_pow2'] is True : 
-            print '\n padding...'
-            solid_known = zero_pad.zero_pad_to_nearest_pow2(solid_known)
     else:
         solid_known = None
 

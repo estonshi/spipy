@@ -151,19 +151,24 @@ def run(num_proc=1, nohup=False, cluster=True):
 	else:
 		cmd = "python " + os.path.join(code_path,'make_input.py') + ' '+ os.path.join(_workpath,'config.ini')
 	subprocess.check_call(cmd, shell=True)
-	if nohup == True:
-		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc) + ' &>' + os.path.join(_workpath, 'phase.log')+'&'
+
+	if num_proc >= 1:
+		if nohup == True:
+			cmd = "mpirun -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' &>' + os.path.join(_workpath, 'phase.log')+'&'
+		else:
+			cmd = "mpirun -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
+		if cluster:
+			print("\n Dry run on cluster, check submit_job.sh for details.\n")
+			submitfile = open(os.path.join(_workpath, "submit_job.sh"), 'w')
+			submitfile.write("#! /bin/bash\n\n")
+			submitfile.write("# Submit the command below to your job submitting system to run 3d phasing\n")
+			submitfile.write(cmd + '\n')
+			submitfile.close()
+		else:
+			subprocess.check_call(cmd, shell=True)
 	else:
-		cmd = "python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' ' + str(num_proc)
-	if cluster:
-		print("\n Dry run on cluster, check submit_job.sh for details.\n")
-		submitfile = open(os.path.join(_workpath, "submit_job.sh"), 'w')
-		submitfile.write("#! /bin/bash\n\n")
-		submitfile.write("# Submit the command below to your job submitting system to run 3d phasing\n")
-		submitfile.write(cmd + '\n')
-		submitfile.close()
-	else:
-		subprocess.check_call(cmd, shell=True)
+		raise RuntimeError('num_proc should be a positive integer ! Exit.')
+
 
 def show_result(outpath=None, exp_param=None):
 	global _workpath

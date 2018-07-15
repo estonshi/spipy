@@ -104,14 +104,11 @@ def ERA(I, iters, **args):
     args['c_dtype'] = c_dtype
 
     if isValid('Mapper', args) : 
+        if rank == 0 : print '\nusing user defined mapper'
         Mapper = args['Mapper']
-
-    elif isValid('hardware', args) and args['hardware'] == 'gpu':
-        from mappers_gpu import Mapper 
-    
     else :
-        print 'using default cpu mapper'
-        from mappers import Mapper 
+        if rank == 0 : print '\nusing default cpu mapper'
+        from mappers import Mapper
     
     eMods     = []
     eCons     = []
@@ -129,7 +126,7 @@ def ERA(I, iters, **args):
     modes  = mapper.modes
 
     if iters > 0 and rank == 0 :
-        print '\n\nalgrithm progress iteration convergence modulus error'
+        print '\nalgrithm progress iteration convergence modulus error'
     
     for i in range(iters) :
         modes0 = modes.copy()
