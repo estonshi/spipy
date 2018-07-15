@@ -119,9 +119,9 @@ def run_simulation(help = None):
     pat_num = config.get("make_data","num_data")
     save_pdb = os.path.join(work_dir,'data/') + config.get("make_densities","pdb_code")
     cmd = 'python ' + os.path.join(work_dir,'sim_setup.py') + ' -c ' + os.path.join(work_dir,"config.ini")
-    subprocess.call(cmd, shell=True)
+    subprocess.check_call(cmd, shell=True)
     cmd = 'python ' + os.path.join(work_dir,'py_src/read_emc.py') + ' ' + save_pdb + ' ' + pat_num
-    subprocess.call(cmd, shell=True)
+    subprocess.check_call(cmd, shell=True)
     # delete tmp file
     cmd = 'rm -rf ' + os.path.join(work_dir,'data/densityMap.bin') + ' ' + os.path.join(work_dir,'data/det_sim.dat')\
         + ' ' + os.path.join(work_dir,'data/intensities.bin') + ' ' + os.path.join(work_dir,'data/photons.emc')\
@@ -129,7 +129,12 @@ def run_simulation(help = None):
         + ' ' + os.path.join(work_dir,'make_data') + ' ' + os.path.join(work_dir,'make_densities.py')\
         + ' ' + os.path.join(work_dir,'make_detector.py') + ' ' + os.path.join(work_dir,'make_intensities.py')\
         + ' ' + os.path.join(work_dir,'py_src') + ' ' + os.path.join(work_dir,'sim_setup.py')\
-        + ' ' + os.path.join(work_dir,'src') + ' ' + os.path.join(work_dir,'__init__*')
+        + ' ' + os.path.join(work_dir,'src') + ' ' + os.path.join(work_dir,'__init__*')\
+        + ' ' + os.path.join(work_dir,'aux/scattering.npy')
+    subprocess.check_call(cmd, shell=True)
+    # change dir arch
+    cmd = 'mv ' + os.path.join(work_dir,'aux') + ' ' + os.path.join(work_dir,'input')\
+        + '; mv ' + os.path.join(work_dir,'data') + ' ' + os.path.join(work_dir,'output')
     subprocess.check_call(cmd, shell=True)
 
     print("\n== Complete ! ==")

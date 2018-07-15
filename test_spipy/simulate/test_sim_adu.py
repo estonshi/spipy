@@ -1,18 +1,22 @@
+from __future__ import print_function, division, absolute_import
+
 import numpy as np
 from spipy.simulate import sim_adu
 
 if __name__ == '__main__':
-	pdb="./Fe_nano.pdb"
-	config_param = {'parameters|detd' : 200, 'parameters|lambda' : 1.0, \
-	'parameters|detsize' : 128, 'parameters|pixsize' : 0.3, \
-	'parameters|stoprad' : 6, 'parameters|polarization' : 'x', \
-	'make_data|num_data' : 10, 'make_data|fluence' : 1e14, \
-	'make_data|scatter_factor' : True, 'make_data|ram_first' : True}
-	euler_range = np.array([[0,np.pi/2.0],[0,np.pi/2.0],[0,np.pi/2.0]])
-	
-	sim_adu.single_process(pdb_file=pdb, param=config_param, \
-		euler_mode='helix', euler_order='zxz', euler_range=euler_range, predefined=None, save_dir='./')
-	'''
-	sim_adu.multi_process(save_dir='./', pdb_file=pdb, param=config_param, \
-		euler_mode='random', euler_order='zxz', euler_range=euler_range, predefined=None, njobs=2)
-	'''
+    pdb = "./ico.pdb"
+    config_param = {'parameters|detd' : 600, 'parameters|lambda' : 5.0, \
+        'parameters|detsize' : 128, 'parameters|pixsize' : 1.2, \
+        'parameters|stoprad' : 0, 'parameters|polarization' : 'x', \
+        'make_data|num_data' : 6, 'make_data|fluence' : 1e14, \
+        'make_data|scatter_factor' : True, 'make_data|ram_first' : True}
+    euler_range = np.array([[0, np.pi / 2.0], [0, np.pi / 2.0],
+                            [0, np.pi / 2.0]])
+    euler = [[0,0,1.57],[1.57,0,0],[0.754,0,0],[0,0.754,0],[1,1,1]]
+
+    sim_adu.single_process(pdb_file=pdb, param=config_param, \
+        euler_mode='random', euler_order='zxz', euler_range=euler_range, predefined=None, save_dir='./')
+    '''
+    sim_adu.multi_process(save_dir='./', pdb_file=pdb, param=config_param, \
+        euler_mode='predefined', euler_order='zxz', euler_range=euler_range, predefined=euler)
+    '''

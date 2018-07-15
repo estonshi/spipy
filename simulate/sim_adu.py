@@ -3,6 +3,11 @@ import os
 from spipy.analyse import rotate
 from scipy.linalg import get_blas_funcs
 import numexpr as ne
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+m_rank = comm.Get_rank()
+m_size = comm.Get_size()
 
 def help(module):
 	if module=="multi_process":
@@ -14,7 +19,6 @@ def help(module):
 		print("     #option: euler_order (rotation order, such as 'zxz' or 'zyz'..., default='zxz')")
 		print("     #option: euler_range (the range of euler angles to rotate object, numpy.array([[alpha_min,alpha_max],[beta_min,beta_max],[gamma_min,gamma_max]]), shape=(3,2)), default=None")
 		print("     #option: predefined (if euler_mode is 'predefined', then you have to specify all euler angles used for object rotation, shape=(Ne,3), default=None)")
-		print("     #option: njobs (number of jobs, int, default=2)")
 		print("    -> NO RETURN")
 	elif module=="single_process":
 		print("This function generates spi patterns by simulating atom reflection using single jobs")
@@ -82,13 +86,13 @@ class simulation():
 			if mode=='random':
 				pat_num = self.config_param['make_data|num_data']
 				alpha = np.random.rand(pat_num) * 2 * np.pi
-				beta = np.random.rand(pat_num) * np.pi
+				beta = np.arccos( ( np.random.rand(pat_num) - 0.5 ) * 2 )
 				gamma = np.random.rand(pat_num) * 2 * np.pi
 				self.euler = np.vstack([alpha,beta,gamma]).T
 			elif mode=='helix':
 				pat_num = self.config_param['make_data|num_data']
 				alpha = np.linspace(0,np.pi*2,pat_num)
-				beta = np.linspace(0,np.pi,pat_num)
+				beta = np.arccos(np.linspace(-1,1,pat_num))[::-1]
 				gamma = np.linspace(0,np.pi*2,pat_num)
 				self.euler = np.vstack([alpha,beta,gamma]).T
 			elif mode=='predefined':
@@ -105,13 +109,14 @@ class simulation():
 			if mode=='random':
 				pat_num = self.config_param['make_data|num_data']
 				alpha = np.random.rand(pat_num) * (arange[0].max()-arange[0].min()) + arange[0].min()
-				beta = np.random.rand(pat_num) * (arange[1].max()-arange[1].min()) + arange[1].min()
+				beta = np.arccos((np.random.rand(pat_num)-0.5)*2)/np.pi * (arange[1].max()-arange[1].min()) + arange[1].min()
 				gamma = np.random.rand(pat_num) * (arange[2].max()-arange[2].min()) + arange[2].min()
 				self.euler = np.vstack([alpha,beta,gamma]).T
 			elif mode=='helix':
 				pat_num = self.config_param['make_data|num_data']
 				alpha = np.linspace(arange[0].min(),arange[0].max(),pat_num+2)[1:-1]
-				beta = np.linspace(arange[1].min(),arange[1].max(),pat_num+2)[1:-1]
+				beta = np.arccos(np.linspace(-1,1,pat_num+2))[::-1]/np.pi*(arange[1].max()-arange[1].min()) + arange[1].min()
+				beta = beta[1:-1]
 				gamma = np.linspace(arange[2].min(),arange[2].max(),pat_num+2)[1:-1]
 				self.euler = np.vstack([alpha,beta,gamma]).T
 			elif mode=='predefined':
@@ -274,8 +279,8 @@ class simulation():
 		patterns = np.zeros((num_pat, det_l, det_l))
 		# generate patterns
 		self.generate_pattern(self.euler, patterns)
-		beam_stop = radp.circle(2, bstopR) + (np.array(patterns.shape[1:])-1)/2
-		if beam_stop is not None:
+		if bstopR is not None and bstopR > 0:
+			beam_stop = radp.circle(2, bstopR) + (np.array(patterns.shape[1:])-1)/2
 			patterns[:,beam_stop[:,0],beam_stop[:,1]] = 0
 		output = {'oversampling_rate' : self.oversampl, \
 					'euler_angles' : self.euler, \
@@ -284,17 +289,25 @@ class simulation():
 					'patterns' : patterns}
 		return output
 
+
 def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None, save_dir=None):
 	import h5py
+	import time
+
 	if save_dir is not None and not os.path.isdir(save_dir):
 		raise ValueError('Your save directory is invalid')
 	sim = simulation()
 	sim.configure(pdb_file, param)
+	if m_rank == 0:
+		print('\nOversampling rate is : '+str(sim.oversampl))
 	sim.generate_euler(euler_mode, euler_order, euler_range, predefined)
 	dataset = sim.assemble()
 	if save_dir is not None:
 		# save h5
-		savef = h5py.File(os.path.join(save_dir, 'spipy_adu_simulation.h5'), 'w')
+		time_seed = time.ctime()
+		time_seed = time_seed.replace(' ','_')
+		time_seed = time_seed.replace(':','_')
+		savef = h5py.File(os.path.join(save_dir, 'spipy_adu_simulation_'+time_seed+'.h5'), 'w')
 		savef.create_dataset('oversampling_rate', data=dataset['oversampling_rate'])
 		savef.create_dataset('rotation_order', data=dataset['rotation_order'])
 		savef.create_dataset('patterns', data=dataset['patterns'], chunks=True, compression="gzip")
@@ -307,62 +320,80 @@ def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', eule
 	else:
 		return dataset
 
-def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None, njobs=2):
+
+def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None):
 	import h5py
-	import multiprocessing as mp
-	if not os.path.isdir(save_dir):
-		raise ValueError('Your save directory is invalid')
-	if njobs<1:
-		raise ValueError('Number of jobs should not <1')
-	if predefined is not None:
-		euler_mode = 'predefined'
-	# multi-process
-	pool = mp.Pool(processes = njobs)
-	result = []
-	if euler_mode=='predefined':
-		num_pat = len(predefined)
-	else:
-		num_pat = param['make_data|num_data']
-	pool_bin = np.linspace(0, num_pat, njobs+1, dtype=int)
-	patterns = np.zeros((num_pat, param['parameters|detsize'], param['parameters|detsize']))
-	eul_angles = np.zeros((num_pat, 3))
-	# split euler
-	if euler_mode=='random' or euler_mode=='helix':
-		if euler_range is not None:
-			alpha_bin = np.linspace(euler_range[0,0], euler_range[0,1], njobs+1)
-			beta_bin = np.linspace(euler_range[1,0], euler_range[1,1], njobs+1)
-			gamma_bin = np.linspace(euler_range[2,0], euler_range[2,1], njobs+1)
+	import time
+
+	#import multiprocessing as mp
+	if m_rank == 0:
+		if not os.path.isdir(save_dir):
+			raise ValueError('Your save directory is invalid')
+		if m_size<=1:
+			raise ValueError('Number of jobs should not <=1')
+
+	# split num_pat
+	if m_rank == 0:
+		if euler_mode=='predefined':
+			num_pat = len(predefined)
 		else:
-			alpha_bin = np.linspace(0, np.pi*2, njobs+1)
-			beta_bin = np.linspace(0, np.pi, njobs+1)
-			gamma_bin = np.linspace(0, np.pi*2, njobs+1)
-	for ind, i in enumerate(pool_bin[:-1]):
-		print('Start process ' + str(ind))
-		param_copy = param.copy()
-		param_copy['make_data|num_data'] = int(pool_bin[ind+1]-i)
+			num_pat = param['make_data|num_data']
+		pool_bin = np.linspace(0, num_pat, m_size+1, dtype=int)
+		# split euler
 		if euler_mode=='random' or euler_mode=='helix':
-			euler_range_copy = np.array([alpha_bin[ind:ind+2], beta_bin[ind:ind+2], gamma_bin[ind:ind+2]])
-			euler_defined_copy = None
-		elif euler_mode=='predefined':
-			euler_defined_copy = predefined[i:pool_bin[ind+1]]
-			euler_range_copy = None
-		result.append(pool.apply_async(single_process, args=(pdb_file, param_copy, euler_mode, euler_order, euler_range_copy, euler_defined_copy, None,)))
-	pool.close()
-	pool.join()
-	# merge
-	oversampling_rate = None
-	for ind,re in enumerate(result):
-		datset = re.get()
-		patterns[pool_bin[ind]:pool_bin[ind+1]] = datset['patterns']
-		eul_angles[pool_bin[ind]:pool_bin[ind+1]] = datset['euler_angles']
-		oversampling_rate = datset['oversampling_rate']
-	# save h5
-	savef = h5py.File(os.path.join(save_dir, 'spipy_adu_simulation.h5'), 'w')
-	savef.create_dataset('oversampling_rate', data=oversampling_rate)
-	savef.create_dataset('rotation_order', data=euler_order)
-	savef.create_dataset('patterns', data=patterns, chunks=True, compression="gzip")
-	savef.create_dataset('euler_angles', data=eul_angles, chunks=True, compression="gzip")
-	grp = savef.create_group('simu_parameters')
-	for k, v in param.iteritems():
-		grp.create_dataset(k, data=v)
-	savef.close()
+			if euler_range is not None:
+				alpha_bin = np.linspace(euler_range[0,0], euler_range[0,1], m_size+1)
+				beta_bin = np.linspace(euler_range[1,0], euler_range[1,1], m_size+1)
+				gamma_bin = np.linspace(euler_range[2,0], euler_range[2,1], m_size+1)
+			else:
+				alpha_bin = np.linspace(0, np.pi*2, m_size+1)
+				beta_bin = np.linspace(0, np.pi, m_size+1)
+				gamma_bin = np.linspace(0, np.pi*2, m_size+1)
+	# mpi
+	if m_rank == 0:
+		for ind, i in enumerate(pool_bin[:-1]):
+			param_copy = param.copy()
+			param_copy['make_data|num_data'] = int(pool_bin[ind+1]-i)
+			if euler_mode=='random' or euler_mode=='helix':
+				euler_range_copy = np.array([alpha_bin[ind:ind+2], beta_bin[ind:ind+2], gamma_bin[ind:ind+2]])
+				euler_defined_copy = None
+			elif euler_mode=='predefined':
+				euler_defined_copy = predefined[i:pool_bin[ind+1]]
+				euler_range_copy = None
+			if ind < m_size-1:
+				comm.send([param_copy, euler_range_copy, euler_defined_copy], dest=ind+1)
+	if m_rank > 0:
+		param_copy, euler_range_copy, euler_defined_copy = comm.recv(source=0)
+
+	# run single_process
+	solution = single_process(pdb_file, param_copy, euler_mode, euler_order, euler_range_copy, euler_defined_copy, None)
+	
+	# mpi gather and merge solutions
+	combined_dataset = comm.gather(solution, root=0)
+
+	if m_rank == 0:
+		patterns = np.zeros((num_pat, param['parameters|detsize'], param['parameters|detsize']))
+		eul_angles = np.zeros((num_pat, 3))
+		oversampling_rate = None
+		# merge solutions
+		pin = 0
+		for ind,solution in enumerate(combined_dataset):
+			num = solution['patterns'].shape[0]
+			patterns[pin:pin+num] = solution['patterns']
+			eul_angles[pin:pin+num] = solution['euler_angles']
+			oversampling_rate = solution['oversampling_rate']
+			pin += num
+		# save h5
+		time_seed = time.ctime()
+		time_seed = time_seed.replace(' ','_')
+		time_seed = time_seed.replace(':','_')
+		savef = h5py.File(os.path.join(save_dir, 'spipy_adu_simulation_'+time_seed+'.h5'), 'w')
+		savef.create_dataset('oversampling_rate', data=oversampling_rate)
+		savef.create_dataset('rotation_order', data=euler_order)
+		savef.create_dataset('patterns', data=patterns, chunks=True, compression="gzip")
+		savef.create_dataset('euler_angles', data=eul_angles, chunks=True, compression="gzip")
+		grp = savef.create_group('simu_parameters')
+		for k, v in param.iteritems():
+			grp.create_dataset(k, data=v)
+		savef.close()
+

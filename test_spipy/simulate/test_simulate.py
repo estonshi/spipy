@@ -9,7 +9,7 @@ if __name__=="__main__":
                   'make_data|num_data' : 100, 'make_data|fluence' : 1e16}
 
 	print("Create new project ...")
-	sim.generate_config_files(pdb_file='./Fe_nano.pdb', workpath=None, name='simu_test', params=config_default)
+	sim.generate_config_files(pdb_file='./ico.pdb', workpath=None, name='simu_test', params=config_default)
 	
 	print("Simulating ...")
 	sim.run_simulation()
