@@ -153,10 +153,13 @@ def run(num_proc=1, nohup=False, cluster=True):
 	subprocess.check_call(cmd, shell=True)
 
 	if num_proc >= 1:
+		# mpirun path
+		mpirun = subprocess.check_output('which python', shell=True).split('bin')[0]
+		mpirun = os.path.join(mpirun, 'bin/mpirun')
 		if nohup == True:
-			cmd = "mpirun -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' &>' + os.path.join(_workpath, 'phase.log')+'&'
+			cmd = mpirun + " -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5') + ' &>' + os.path.join(_workpath, 'phase.log') + '&'
 		else:
-			cmd = "mpirun -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
+			cmd = mpirun + " -n "+str(num_proc)+" python " + os.path.join(code_path, 'phase.py') + ' ' + os.path.join(_workpath, 'input.h5')
 		if cluster:
 			print("\n Dry run on cluster, check submit_job.sh for details.\n")
 			submitfile = open(os.path.join(_workpath, "submit_job.sh"), 'w')
