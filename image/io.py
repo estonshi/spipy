@@ -97,9 +97,11 @@ def pdb2density(pdb_file, resolution):
 
 	return box
 
-def xyz2pdb(xyz_array, atom_type, save_file="./convert.pdb"):
+def xyz2pdb(xyz_array, atom_type, b_factor=None, save_file="./convert.pdb"):
 	if xyz_array.shape[1]!=3 or len(xyz_array.shape)!=2 or type(atom_type)!=list:
 		raise ValueError('Invalid input data shape/type !')
+	if b_factor is not None and len(b_factor)!=len(xyz_array):
+		raise ValueError('The length of b_factor should be equal to xyz_array')
 	xyz = xyz_array
 	pdb = open(save_file,'w')
 	for ind,line in enumerate(xyz):
@@ -109,7 +111,10 @@ def xyz2pdb(xyz_array, atom_type, save_file="./convert.pdb"):
 		y = "%+8.3f" %line[1]
 		z = "%+8.3f" %line[2]
 		occup = "%6.2f" %1.0
-		t = "%6.2f" %1.0
+		if b_factor is not None:
+			t = "%6.2f" %b_factor[ind]
+		else:
+			t = "%6.2f" %1.0
 		if len(atom_type)==1:
 			atype = "%-2s" %(atom_type[0].upper())
 		elif len(atom_type)==xyz_array.shape[0]:
