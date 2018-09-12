@@ -101,6 +101,7 @@ fi
 
 echo "==> install packages"
 pip install mrcfile
+pip install mpi4py
 
 echo "==> others"
 cd $root_folder/phase
