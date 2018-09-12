@@ -65,31 +65,49 @@ def grid(input_patt):
 		return
 
 # frediel search of SPI pattern to find center
-def frediel_search(pattern, estimated_center, mask=None):
+def frediel_search(pattern, estimated_center, mask=None, small_r=None, large_r=None):
+	if small_r is not None and int(small_r)<=0:
+		raise ValueError("small_r should be a positive integer or None")
+	if large_r is not None and int(large_r)<=0:
+		raise ValueError("large_r should be a positive integer or None")
+
 	if mask is not None:
 		maskpattern = pattern * (1 - mask)
 	else:
 		maskpattern = pattern
 	size = np.array(maskpattern.shape)
 	estimated_center = np.array(estimated_center).astype(int)
-	search_z = [max(size[0]/20, 20), max(size[1]/20, 20)]
+	if small_r is None:
+		search_z = [max(size[0]/20, 20), max(size[1]/20, 20)]
+	else:
+		search_z = [int(small_r), int(small_r)]
 	searchzone_top = max(0, estimated_center[0]-search_z[0]/2)
 	searchzone_bottom = min(size[0], estimated_center[0]+search_z[0]/2)
 	searchzone_left = max(0, estimated_center[1]-search_z[1]/2)
 	searchzone_right = min(size[1], estimated_center[1]+search_z[1]/2)
 	search_zone = np.mgrid[searchzone_top : searchzone_bottom,\
 					searchzone_left : searchzone_right]
-	fred_z = [min(max(size[0]/2, 50),size[0]), min(max(size[1]/2, 50),size[1])]
+	if large_r is None:
+		fred_z = [min(max(size[0]/2, 50),size[0]), min(max(size[1]/2, 50),size[1])]
+	else:
+		fred_z = [int(large_r)*2, int(large_r)*2]
 	score = np.inf
 	center = [0,0]
+
 	for cen in search_zone.T.reshape(np.product(search_zone[0].shape),2):
 		fred_zone = np.mgrid[cen[0]-fred_z[0]/2:cen[0]+fred_z[0]/2,cen[1]-fred_z[1]/2:cen[1]+fred_z[1]/2]
+		fred_zone = fred_zone.reshape((2,fred_zone.shape[1]*fred_zone.shape[2]))
 		inv_fred_zone = np.array([2*cen[0] - fred_zone[0], 2*cen[1] - fred_zone[1]])
-		this_score = np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] - maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
-					* (maskpattern[fred_zone[0],fred_zone[1]]>0).astype(float) * (maskpattern[inv_fred_zone[0],inv_fred_zone[1]]>0).astype(float))
+		no_mask_area = (mask[fred_zone[0],fred_zone[1]]==0) & (mask[inv_fred_zone[0],inv_fred_zone[1]]==0)
+		this_score = 2 * np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] - maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
+					* no_mask_area.astype(float)) \
+					/ np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] + maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
+					 * no_mask_area.astype(float))
+		this_score /= len(np.where(no_mask_area)[0])
 		if score>this_score:
 			center = cen
 			score = this_score
+		print cen,this_score,len(np.where(no_mask_area)[0])
 	return center
 
 # calculate accumulate intensity profile of SPI patterns
