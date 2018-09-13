@@ -49,9 +49,7 @@ def get_detector_config(config_file, show=False):
     # Optional arguments
     try:
         params['ewald_rad'] = config.getfloat('parameters', 'ewald_rad')
-        if params['ewald_rad'] == 'None':
-            params['ewald_rad'] = params['detd'] / params['pixsize']
-    except ConfigParser.NoOptionError:
+    except:
         params['ewald_rad'] = params['detd'] / params['pixsize']
 
     try:
