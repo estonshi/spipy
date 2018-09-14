@@ -107,7 +107,6 @@ def frediel_search(pattern, estimated_center, mask=None, small_r=None, large_r=N
 		if score>this_score:
 			center = cen
 			score = this_score
-		print cen,this_score,len(np.where(no_mask_area)[0])
 	return center
 
 # calculate accumulate intensity profile of SPI patterns
