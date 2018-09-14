@@ -12,6 +12,8 @@ def help(module):
 		print("    -> Input: pattern (none negative numpy.ndarray, shape=(Nx, Ny))")
 		print("              estimated_center (estimated center of the pattern : (Cx, Cy), error in 20 pixels )")
 		print("      option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
+		print("      option: small_r (int, radius of search area for center allocation candidates, pixel)")
+		print("      option: large_r (int, radius of area for sampling frediel twin points, pixel)")
 		return
 	elif module=="inten_profile_vaccurate":
 		print("This finction is used to calculate accumulate intensity profile of SPI patterns")
@@ -80,7 +82,7 @@ def frediel_search(pattern, estimated_center, mask=None, small_r=None, large_r=N
 	if small_r is None:
 		search_z = [max(size[0]/20, 20), max(size[1]/20, 20)]
 	else:
-		search_z = [int(small_r), int(small_r)]
+		search_z = [int(small_r)*2, int(small_r)*2]
 	searchzone_top = max(0, estimated_center[0]-search_z[0]/2)
 	searchzone_bottom = min(size[0], estimated_center[0]+search_z[0]/2)
 	searchzone_left = max(0, estimated_center[1]-search_z[1]/2)
