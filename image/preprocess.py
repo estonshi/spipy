@@ -1,8 +1,10 @@
 import sys
 import numpy as np
+import multiprocessing as mp
 sys.path.append(__file__.split("/image/preprocess.py")[0] + "/analyse")
 import saxs
 import radp
+import criterion
 
 def help(module):
 	if module=="fix_artifact":
@@ -37,7 +39,7 @@ def help(module):
 		print("Help exit.")
 		return
 	elif module=="hit_find":
-		print("This function is used for hit finding, based on chi-square score. High score means hit")
+		print("This function is used for hit finding, based on chi-square test. High score means hit")
 		print("    -> Input: dataset ( raw patterns for intput, numpy.ndarray, shape=(Nd,Nx,Ny) )")
 		print("              background ( averaged running background pattern, numpy.ndarray, shape=(Nx,Ny))")
 		print("              radii_range ( radii of annular area used for hit-finding, list/array, [inner_r, outer_r], unit=pixel)")
@@ -45,6 +47,14 @@ def help(module):
 		print("     *option: cut_off ( chi-square cut-off, positve int/float, default=None and a mix-gaussian analysis is used for clustering)")
 		print("    -> Return: label ( 0/1 array, 1 stands for hit, the same order with 'dataset' )")
 		print("[Notice] if use cut_off=None, it's better for input dataset to contain over 100 patterns")
+	elif module=="hit_find_pearson":
+		print("This function is used for hit finding, based on pearson correlation score between pattern and background. Low score means hit.")
+		print("    -> Input: dataset ( raw patterns for intput, numpy.ndarray, shape=(Nd,Nx,Ny) )")
+		print("              background ( averaged running background pattern, numpy.ndarray, shape=(Nx,Ny))")
+		print("              radii_range ( radii of annular area used for hit-finding, list/array, [inner_r, outer_r], unit=pixel)")
+		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
+		print("     *option: max_cc ( max cc for patterns to be identified as hits, -1~1 float, default=0.5)")
+		print("    -> Return: label ( 0/1 array, 1 stands for hit, the same order with 'dataset' )")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -88,7 +98,6 @@ def _fix_artifact_auto_single_process(data, label, center, I_prime, mask):
 
 def fix_artifact_auto(dataset, estimated_center, njobs=1, mask=None, vol_of_bins=100):
 	import classify
-	import multiprocessing as mp
 	njobs = abs(int(njobs))
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
@@ -197,7 +206,6 @@ def adu2photon(dataset, mask=None, photon_percent=0.1, nproc=1, transfer=True, f
 	print("Estimated adu value is " + str(adu) + ". Done.\n")
 
 	if transfer:
-		import multiprocessing as mp
 		print("Transferring adu patterns to photon count patterns ...")
 		if nproc==1:
 			out = _transfer(dataset, no_photon_percent, adu, force_poisson)
@@ -268,10 +276,14 @@ def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
 	shell = np.zeros(dsize[1:])
 	shell[outer_shell[:,0], outer_shell[:,1]] = 1
 	shell[inner_shell[:,0], inner_shell[:,1]] = 0
+	shell[np.where(mask > 0)] = 0
+	shell_index = np.where(shell == 1)
+	del shell
 	# calculate chi square
 	chi = np.zeros((dsize[0],1))
 	for ind,p in enumerate(maskdataset):
-		chi[ind,0] = np.sum( (p - maskbackground)**2 * shell ) / np.sum( (maskbackground - np.mean(maskbackground))**2 * shell)
+		chi[ind,0] = np.sum( (p[shell_index] - maskbackground[shell_index])**2 )\
+					 / np.sum( (maskbackground[shell_index] - np.mean(maskbackground[shell_index]))**2 )
 	# predict
 	if type(cut_off)==float or type(cut_off)==int:
 		# cut-off
@@ -285,3 +297,40 @@ def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
 		if np.mean(chi[np.where(label==0)[0]]) > np.mean(chi[np.where(label==1)[0]]):
 			label = 1 - label
 	return label
+
+def hit_find_pearson(dataset, background, radii_range, mask=None, max_cc=0.5):
+	dataset[np.isnan(dataset)] = 0
+	dataset[np.isinf(dataset)] = 0
+	dataset = np.abs(dataset)
+	background[np.isnan(background)] = 0
+	background[np.isinf(background)] = 0
+	background = np.abs(background)
+	radii_range = np.array(radii_range).astype(int)
+	if mask is not None:
+		maskdataset = dataset * (1 - mask)
+		maskbackground = background * (1 - mask)
+	else:
+		maskdataset = dataset
+		maskbackground = background
+	dsize = maskdataset.shape
+	if len(dsize)!=3 or background.shape!=dsize[1:]:
+		raise RuntimeError("Input a set of 2d patterns! background should have the same shape with input!")
+	center = saxs.frediel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+	# calculate radial profile
+	cc = np.zeros(dsize[0])
+	radp_bg = radp.radial_profile_2d(background, center, mask)[radii_range[0]:radii_range[1],1]
+	for ind,p in enumerate(maskdataset):
+		radp_d = radp.radial_profile_2d(p, center, mask)[radii_range[0]:radii_range[1],1]
+		cc[ind] = criterion.Pearson_cc(radp_d, radp_bg, 0)
+	# predict
+	label = np.zeros(dsize[0])
+	label[np.where(cc < max_cc)[0]] = 1
+	return label
+
+
+
+
+
+
+
+

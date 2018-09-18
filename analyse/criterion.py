@@ -98,11 +98,11 @@ def Pearson_cc(exp_d, ref_d, axis=-1):
 		new_shape = list(ref_d.shape)[:-1] + [1]
 		mean_exp = np.mean(exp_d,axis=-1).reshape(new_shape)
 		mean_ref = np.mean(ref_d,axis=-1).reshape(new_shape)
-		numerator = np.sum((exp_d - mean_exp) * (ref_d - mean_ref) , axis=-1)
-		dominator = np.sqrt(np.sum((exp_d - mean_exp)**2, axis=-1) * np.sum((ref_d - mean_ref)**2, axis=-1))
+		numerator = np.mean((exp_d - mean_exp) * (ref_d - mean_ref) , axis=-1)
+		dominator = np.sqrt((np.mean(exp_d**2, axis=-1)-np.mean(exp_d, axis=-1)**2) * (np.mean(ref_d**2, axis=-1)-np.mean(ref_d, axis=-1)**2))
 	else:
-		numerator = np.sum((exp_d - np.mean(exp_d)) * (ref_d - np.mean(ref_d)))
-		dominator = np.sqrt(np.sum((exp_d - np.mean(exp_d))**2) * np.sum((ref_d - np.mean(ref_d))**2))
+		numerator = np.mean((exp_d - np.mean(exp_d)) * (ref_d - np.mean(ref_d)))
+		dominator = np.sqrt((np.mean(exp_d**2)-np.mean(exp_d)**2) * (np.mean(ref_d**2)-np.mean(ref_d)**2))
 	return numerator/dominator
 
 def PRTF(phased_reciprocal, center, mask=None):

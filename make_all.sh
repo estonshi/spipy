@@ -62,8 +62,15 @@ then
 	nowmpirun=`which mpirun`
 	if [ $nowmpicc = "${Ana_path%/bin/python*}/bin/mpicc" ] || [ $nowmpirun = "${Ana_path%/bin/python*}/bin/mpirun" ]
 	then
-		echo "Please don't use MPI in anaconda/miniconda. Exit."
-		exit 1
+		echo "I can't use mpi in anaconda/miniconda to compile myself."
+		echo "Give me your specific mpicc path (type 'n' to exit) : "
+		read mympicc
+		if [ $mympicc = "n" ]
+		then
+			exit 1
+		fi
+	else
+		mympicc=$nowmpicc
 	fi
 fi
 
@@ -78,7 +85,7 @@ cd $root_folder/merge/template_emc/src
 chmod u+x compile.sh ../new_project
 if [ $sys = "Linux" ]
 then
-	mpicc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_LINUX -I ./ -lgsl -lgslcblas -lm -O3
+	$mympicc -fopenmp recon.c setup.c max.c quat.c interp.c -o emc_LINUX -I ./ -lgsl -lgslcblas -lm -O3
 	chmod u+x emc_LINUX
 elif [ $sys = "Darwin" ]
 then
@@ -91,7 +98,7 @@ cd $root_folder/simulate/src
 chmod u+x compile.sh ../code/make_densities.py ../code/make_detector.py ../code/make_intensities.py
 if [ $sys = "Linux" ]
 then
-	mpicc -fopenmp make_data.c -o make_data_LINUX -I ./ -lgsl -lgslcblas -lm -O3
+	$mympicc -fopenmp make_data.c -o make_data_LINUX -I ./ -lgsl -lgslcblas -lm -O3
 	chmod u+x make_data_LINUX
 elif [ $sys = "Darwin" ]
 then
@@ -100,8 +107,16 @@ then
 fi
 
 echo "==> install packages"
-pip install mrcfile
-pip install mpi4py
+pack_name=`conda list | grep "mrcfile"`
+if [ -z "$pack_name" ]
+then
+	pip install mrcfile
+fi
+pack_name=`conda list | grep "mpi4py"`
+if [ -z "$pack_name" ]
+then
+	pip install mpi4py
+fi
 
 echo "==> others"
 cd $root_folder/phase
