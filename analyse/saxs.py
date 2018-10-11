@@ -1,13 +1,15 @@
 import numpy as np
 import sys
 sys.path.append(__file__.split('/analyse/saxs.py')[0]+'/image/')
+import radp
+import q as spi_q
 
 def help(module):
 	if module=="grid":
 		print("This finction is used to calculate grid of a pattern")
 		print("    -> Input: input_patt (numpy.ndarray, shape = (Nx,Ny))")
 		return
-	elif module=="frediel_search":
+	elif module=="friedel_search":
 		print("This function is used to find the zeros frequency point of an SPI pattern")
 		print("    -> Input: pattern (none negative numpy.ndarray, shape=(Nx, Ny))")
 		print("              estimated_center (estimated center of the pattern : (Cx, Cy), error in 20 pixels )")
@@ -38,6 +40,7 @@ def help(module):
 		print("    -> Input: pat (input pattern, a 2d numpy array, shape=(Nx,Ny))")
 		print("              estimated_center (estimated center of original pattern, )")
 		print("      option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
+		print("      option: large_r / small_r (see 'spipy.analyse.saxs.friedel_search' help)")
 		print("    -> Output: newpat ( output pattern, a 2d numpy array, shape=(Nx',Ny'))")
 		print("               newmask ( ONLY if mask!=None, then the cut mask pattern will be output)")
 	elif module=="particle_size":
@@ -52,6 +55,16 @@ def help(module):
 			RECOMMOND to watch auto-correlation radial profile and find the locations of peaks, which are most trustable values of possible particle sizes. \
 			auto_correlation_radial_profile is a 2-d array, where the 1st colum is particle size in nm (if exparam is given) and 2nd colum is the auto-correlation value.")
 		print("[NOTICE] is your give exparam, the output particle_size is in nanometer; otherwise it is in pixels. Auto correlation radial profile is in pixels")
+	elif module=="particle_size_sp":
+		print("This function fit the diameter of spherical-like samples by using q0 values (the first intensity minimum) of their SPI patterns")
+		print("    -> Input: dataset (patterns, numpy array, shape=(Nd, x, y))")
+		print("              exparam (set up parameters of experiment, a list [detector-distance(mm), lambda(A), pixel-length(mm)])")
+		print("              fitarea (a list [nr, nR], define an ROI where the radius is between nr and nR, and use it to do the fitting)")
+		print("              badsearchr (int, the largest distance from the 10th Iq-peaks to center within all patterns, unit=pixel)")
+		print("              method (fitting method, str, chosen from 'q0' and 'lsq', default = 'q0')")
+		print("     #option: mask (0/1 binary pattern, shape=(Nx, Ny), 1 means masked area, 0 means useful area, default=None)")
+		print("     #option: center (center of diffration patterns, list/array, default = None and the program will search center automatically for every pattern)")
+		print("     #option: verbose (bool, whether to display progress bar, default = True)")
 	else:
 		raise ValueError("No module names "+str(module))
 
@@ -67,7 +80,7 @@ def grid(input_patt):
 		return
 
 # frediel search of SPI pattern to find center
-def frediel_search(pattern, estimated_center, mask=None, small_r=None, large_r=None):
+def friedel_search(pattern, estimated_center, mask=None, small_r=None, large_r=None):
 	if small_r is not None and int(small_r)<=0:
 		raise ValueError("small_r should be a positive integer or None")
 	if large_r is not None and int(large_r)<=0:
@@ -113,16 +126,14 @@ def frediel_search(pattern, estimated_center, mask=None, small_r=None, large_r=N
 
 # calculate accumulate intensity profile of SPI patterns
 def inten_profile_vaccurate(dataset, mask, *exp_param):
-	import q
 	if len(exp_param)<4:
 		raise ValueError("Please be sure to give all exp_param ! Exit")
-	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
+	qinfo = spi_q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
 	data = dataset
 	num = data.shape[0]
 	size = data.shape[1:]
 	intens = []
 	rofq = np.inf
-	import radp
 	import scipy.ndimage.interpolation as ndint
 	if mask is not None:
 		newmask = np.round(ndint.zoom(mask, 4)).astype(int)
@@ -130,7 +141,7 @@ def inten_profile_vaccurate(dataset, mask, *exp_param):
 		newmask = None
 	for ind,pat in enumerate(data):
 		newpat = ndint.zoom(pat, 4)
-		newcenter = frediel_search(newpat, [size[0]*4, size[1]*4], mask)
+		newcenter = friedel_search(newpat, [size[0]*4, size[1]*4], mask)
 		intens_one = radp.radial_profile_2d(newpat, newcenter, newmask)
 		intens.append(intens_one[:,1])
 		rofq = min(rofq, len(intens_one[:,1]))
@@ -142,13 +153,13 @@ def inten_profile_vaccurate(dataset, mask, *exp_param):
 	final = final/float(num)
 	return np.vstack((qinfo,final[:len(qinfo)])).T
 
+
 def inten_profile_vfast(dataset, mask, *exp_param):
-	import q
 	if len(exp_param)<4:
 		raise ValueError("Please be sure to give all exp_param ! Exit")
-	qinfo = q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
+	qinfo = spi_q.cal_q(exp_param[0], exp_param[1], exp_param[2]*4, exp_param[3]/4.0)
 	saxs = cal_saxs(dataset)
-	center = frediel_search(saxs, [saxs.shape[0]/2, saxs.shape[1]/2], mask)
+	center = friedel_search(saxs, [saxs.shape[0]/2, saxs.shape[1]/2], mask)
 	import radp
 	import scipy.ndimage.interpolation as ndint
 	newsaxs = newpat = ndint.zoom(saxs, 4)
@@ -164,8 +175,9 @@ def inten_profile_vfast(dataset, mask, *exp_param):
 def cal_saxs(data):
 	return np.sum(data, axis=0)/float(len(data))
 
-def centering(pat, estimated_center, mask=None):
-	center = frediel_search(pat, estimated_center, mask)
+
+def centering(pat, estimated_center, mask=None, small_r=None, large_r=None):
+	center = friedel_search(pat, estimated_center, mask, large_r, small_r)
 	ori_shape = pat.shape
 	c2left = center[1]
 	c2right = ori_shape[1] - center[1] - 1
@@ -197,8 +209,9 @@ def centering(pat, estimated_center, mask=None):
 	else:
 		return pat[top:bottom,left:right], mask[top:bottom,left:right]
 
+
 def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, power=0.7, mask=None):
-	import radp
+	from scipy.signal import argrelextrema
 	# high pass filter
 	csaxs, cmask = centering(saxs, estimated_center, mask)
 	center = np.array(csaxs.shape)/2
@@ -215,21 +228,80 @@ def particle_size(saxs, estimated_center, exparam=None, high_filter_cut=0.3, pow
 	auto_coor_center = np.where(auto_coor==auto_coor.max())
 	radp_auto_coor = radp.radial_profile_2d(auto_coor, auto_coor_center)[:,1]
 	# find peak
+	"""
 	derive = (radp_auto_coor[1:] - radp_auto_coor[:-1])/radp_auto_coor[:-1]
 	peak = np.argmax(derive) + 1
+	"""
+	peak = argrelextrema(radp_auto_coor, np.greater, order=1)[0][0]
 	if type(exparam)==str:
 		try:
-			import q
 			param = np.array(exparam.split(',')).astype(float)
-			q_corner = q.cal_q(param[0], param[1], len(radp_auto_coor), param[2])[-1]
-			q = q.cal_q(param[0], param[1], min(auto_coor.shape), param[2])
-			print("resolution : "+str(1.0/q_corner)+" nm")
-			peak = peak * 1.0/q[-1]
-			sizes = 1.0/q[-1] * np.arange(len(radp_auto_coor))
+			#q_corner = cal_q(param[0], param[1], len(radp_auto_coor), param[2])[-1]
+			qinfo = spi_q.cal_q(param[0], param[1], min(auto_coor.shape), param[2])
+			peak = peak * 1.0/qinfo[-1]
+			sizes = 1.0/qinfo[-1] * np.arange(len(radp_auto_coor))
 		except:
-			print('error')
-			peak = np.argmax(derive) + 1
-			sizes = np.arange(len(radp_auto_coor))
+			raise RuntimeError('given exparam is invalid')	
 	else:
 		sizes = np.arange(len(radp_auto_coor))
 	return [peak, np.vstack([sizes, radp_auto_coor]).T]
+
+
+def particle_size_sp(dataset, exparam, fitarea, badsearchr, method, mask=None, center=None, verbose=True):
+	from scipy.signal import argrelextrema
+	import scipy.optimize as optimization
+
+	def func(q, R):
+		qR = q*R
+		return 9*(np.sin(qR)-qR*np.cos(qR))**2/qR**6
+
+	# local var
+	nr = int(fitarea[0])
+	nR = int(fitarea[1])
+	if nR-nr<10:
+		raise ValueError("Fit area is too small.")
+	detd = exparam[0]
+	lamda = exparam[1]
+	pixr = exparam[2]
+	D = np.zeros(len(dataset))
+	size = np.array(dataset.shape[1:], dtype=int)
+	qinfo = 2*np.pi*spi_q.cal_q(detd, lamda, np.min(size/2), pixr)
+
+	for i,d in enumerate(dataset):
+		bad = 0
+		if center is None:
+			thiscenter = friedel_search(d, size/2, mask, 10, np.min([50, np.min(size/2)]))
+		else:
+			thiscenter = center
+		Iq = radp.radial_profile_2d(d, thiscenter, mask)[nr:nR,1]
+		q_min_index = argrelextrema(Iq, np.less, order=1)[0]
+		q_max_index = argrelextrema(Iq, np.greater, order=1)[0]
+		q_min_index = np.sort(q_min_index)
+		iq = Iq[q_max_index]
+		if len(q_max_index)>5:
+			if np.sum(np.argsort(iq[0:5])-np.arange(5)) != 0:
+				bad = 1
+		else:
+			if np.sum(np.argsort(iq)-np.arange(len(iq))) != 0:
+				bad = 1
+		if bad == 1 \
+		or len(np.where(q_min_index+nr < badsearchr)[0]) > 10 \
+		or len(np.where(q_max_index+nr < badsearchr)[0]) < 2:
+			print("[failed] data index is %d : q0 index is %d\n" % (i, q_min_index[0]+nr))
+			D[i] = 0
+			continue
+		if method == "q0":
+			D[i] = 2*4.493 / qinfo[ q_min_index[0]+nr ]
+		else:
+			R0 = 2*4.493 / qinfo[ q_min_index[0]+nr ]
+			opt,cov = optimization.curve_fit(func, qinfo[nr:nR], Iq, R0)
+			D[i] = opt[0]
+
+		if verbose:
+			if i%(int(np.ceil(len(dataset)/10.0))) == 0 or i==(len(dataset)-1):
+				sys.stdout.write("Processing progess : %.1f\r" % (100*float(i+1)/len(dataset)))
+				sys.stdout.flush()
+
+	return D
+
+

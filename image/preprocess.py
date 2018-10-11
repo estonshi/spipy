@@ -102,7 +102,7 @@ def fix_artifact_auto(dataset, estimated_center, njobs=1, mask=None, vol_of_bins
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
 	dataset[np.where(dataset<0)] = 0
-	center = saxs.frediel_search(np.sum(dataset,axis=0), estimated_center, mask)
+	center = saxs.friedel_search(np.sum(dataset,axis=0), estimated_center, mask)
 	# calculate intensity distribution
 	print("\nAnalysing spectral distribution ...")
 	num_of_bins = int(np.ceil(len(dataset)/vol_of_bins))
@@ -149,7 +149,7 @@ def fix_artifact(dataset, estimated_center, artifacts, mask=None):
 	dataset[np.isinf(dataset)] = 0
 	dataset[np.where(dataset<0)] = 0
 	powder = saxs.cal_saxs(dataset)
-	center = np.array(saxs.frediel_search(powder, estimated_center, mask))
+	center = np.array(saxs.friedel_search(powder, estimated_center, mask))
 	inv_art_loc = 2*center - artifacts
 	# whether inv_art_loc exceed pattern size
 	normal_inv_art_loc = (inv_art_loc[:,0]<powder.shape[0]).astype(int) & (inv_art_loc[:,0]>=0).astype(int) \
@@ -238,6 +238,7 @@ def _transfer(data, no_photon_percent, adu, force_poisson):
 		return np.array([])
 	re = np.zeros(data.shape, dtype='i4')
 	for ind,pat in enumerate(data):
+		"""
 		countp = np.bincount(np.round(pat.ravel()).astype(int))
 		sumc = np.cumsum(countp)
 		percentc = sumc/sumc[-1].astype(float)
@@ -246,6 +247,8 @@ def _transfer(data, no_photon_percent, adu, force_poisson):
 		except:
 			adu_mine = np.where((percentc-no_photon_percent)>=0)[0][0]
 		real_adu = 0.6*adu_mine + 0.4*adu
+		"""
+		real_adu = adu
 		if force_poisson:
 			newp = np.frompyfunc(poisson,1,1)
 			re[ind] = newp(pat/real_adu)
@@ -270,7 +273,7 @@ def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
 	dsize = maskdataset.shape
 	if len(dsize)!=3 or background.shape!=dsize[1:]:
 		raise RuntimeError("Input a set of 2d patterns! background should have the same shape with input!")
-	center = saxs.frediel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+	center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
 	inner_shell = radp.circle(2, radii_range[0]) + np.array(center)
 	outer_shell = radp.circle(2, radii_range[1]) + np.array(center)
 	shell = np.zeros(dsize[1:])
@@ -315,7 +318,7 @@ def hit_find_pearson(dataset, background, radii_range, mask=None, max_cc=0.5):
 	dsize = maskdataset.shape
 	if len(dsize)!=3 or background.shape!=dsize[1:]:
 		raise RuntimeError("Input a set of 2d patterns! background should have the same shape with input!")
-	center = saxs.frediel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+	center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
 	# calculate radial profile
 	cc = np.zeros(dsize[0])
 	radp_bg = radp.radial_profile_2d(background, center, mask)[radii_range[0]:radii_range[1],1]

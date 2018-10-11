@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
 	# test classify.cluster_fTSNE
 	print("\n**2** Test classify.cluster_fTSNE ...")
-	d_comp, predict = classify.cluster_fTSNE(data, mask=mask, low_filter=0.3, no_dims=2, perplexity=5, use_pca=True, initial_dims=20, max_iter=500, theta=0.5, randseed=-1, verbose=True)
+	d_comp, predict = classify.cluster_fTSNE(data, mask=mask, low_filter=0.3, no_dims=2, perplexity=10, use_pca=True, initial_dims=20, max_iter=500, theta=0.5, randseed=-1, verbose=True)
 	print( "data shape after decomposition : " + str(d_comp.shape) )
 	acc = len(np.where(label-predict==0)[0])/float(len(label))
 	print( "predicted precision : " + str(max(acc,1-acc)) )
