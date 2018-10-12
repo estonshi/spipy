@@ -112,6 +112,11 @@ if [ -z "$pack_name" ]
 then
 	pip install mrcfile
 fi
+pack_name=`conda list | grep "openmpi"`
+if [ -z "$pack_name" ]
+then
+	conda install -c mpi4py openmpi
+fi
 pack_name=`conda list | grep "mpi4py"`
 if [ -z "$pack_name" ]
 then
