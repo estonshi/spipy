@@ -334,7 +334,7 @@ def hit_find_pearson(dataset, background, radii_range=None, mask=None, max_cc=0.
 	if radii_range is not None:
 		radii_range[2] = int(round(radii_range[2]))
 		radii_range[3] = int(round(radii_range[3]))
-		if radii_range[0] is None and radii_range[1] is None:
+		if radii_range[0] is None or radii_range[1] is None:
 			center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
 		else:
 			center = [0,0]
