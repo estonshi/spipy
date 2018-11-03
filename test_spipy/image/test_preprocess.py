@@ -17,25 +17,29 @@ if __name__ == "__main__":
 	print("\n(1) test preprocess.hit_finding")
 	# simulate background
 	background = np.random.poisson(1,data.shape[1:])
-	hits = preprocess.hit_find(dataset=data, background=background, radii_range=[10, 100], mask=mask, cut_off=10)
-	print("Predicted hit pattern index: " + str(np.where(hits==1)[0]))
+	hits = preprocess.hit_find(dataset=data, background=background, radii_range=[None, None, 10, 100], mask=mask, cut_off=10)
+	hits2 = preprocess.hit_find_pearson(dataset=data, background=background, radii_range=[None, None, 10, 100], mask=mask, max_cc=0.3)
+	print("Predicted hits index by chi-square: " + str(np.where(hits==1)[0]))
+	print("Predicted hits index by pearson cc: " + str(np.where(hits2==1)[0]))
 
 	# test preprocess.fix_artifacts
 	print("\n(2) test preprocess.fix_artifact")
-	ref = copy.deepcopy(data[0])
+	ref = copy.deepcopy(data[6])
 	data = preprocess.fix_artifact(dataset=data, estimated_center=np.array(data[0].shape)/2, artifacts=artif, mask=mask )
 	plt.subplot(1,2,1)
 	plt.imshow(np.log(1+np.abs(ref)))
 	plt.title('Before fix')
 	plt.subplot(1,2,2)
-	plt.imshow(np.log(1+np.abs(data[0])))
+	plt.imshow(np.log(1+np.abs(data[6])))
 	plt.title('After fix')
 	plt.show()
 
+
 	print("\n(3) test preprocess.adu2photon")
-	adu, newdata = preprocess.adu2photon(dataset=data, mask=mask, photon_percent=0.1, nproc=1, transfer=True, force_poisson=False)
-	plt.imshow(np.log(1+newdata[0]))
+	adu, newdata = preprocess.adu2photon(dataset=data, mask=mask, photon_percent=0.01, nproc=1, transfer=True, force_poisson=False)
+	plt.imshow(np.log(1+newdata[6]))
 	plt.show()
+
 
 	print("\n(4) test preprocess.fix_artifact_auto")
 	pl = mimage.imread('fix_art_auto.png')

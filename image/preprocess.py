@@ -42,7 +42,7 @@ def help(module):
 		print("This function is used for hit finding, based on chi-square test. High score means hit")
 		print("    -> Input: dataset ( raw patterns for intput, numpy.ndarray, shape=(Nd,Nx,Ny) )")
 		print("              background ( averaged running background pattern, numpy.ndarray, shape=(Nx,Ny))")
-		print("              radii_range ( radii of annular area used for hit-finding, list/array, [inner_r, outer_r], unit=pixel)")
+		print("     *option: radii_range ( radii of annular area used for hit-finding, list/array, [center_x, center_y, inner_r, outer_r], unit=pixel, default=None)")
 		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
 		print("     *option: cut_off ( chi-square cut-off, positve int/float, default=None and a mix-gaussian analysis is used for clustering)")
 		print("    -> Return: label ( 0/1 array, 1 stands for hit, the same order with 'dataset' )")
@@ -51,7 +51,7 @@ def help(module):
 		print("This function is used for hit finding, based on pearson correlation score between pattern and background. Low score means hit.")
 		print("    -> Input: dataset ( raw patterns for intput, numpy.ndarray, shape=(Nd,Nx,Ny) )")
 		print("              background ( averaged running background pattern, numpy.ndarray, shape=(Nx,Ny))")
-		print("              radii_range ( radii of annular area used for hit-finding, list/array, [inner_r, outer_r], unit=pixel)")
+		print("     *option: radii_range ( radii of annular area used for hit-finding, list/array, [center_x, center_y, inner_r, outer_r], unit=pixel, default=None)")
 		print("     *option: mask (mask area of patterns, 0/1 numpy.ndarray where 1 means masked, shape=(Nx,Ny), default=None)")
 		print("     *option: max_cc ( max cc for patterns to be identified as hits, -1~1 float, default=0.5)")
 		print("    -> Return: label ( 0/1 array, 1 stands for hit, the same order with 'dataset' )")
@@ -257,7 +257,7 @@ def _transfer(data, no_photon_percent, adu, force_poisson):
 			re[ind] = newp
 	return re
 
-def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
+def hit_find(dataset, background, radii_range=None, mask=None, cut_off=None):
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
 	dataset = np.abs(dataset)
@@ -273,20 +273,32 @@ def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
 	dsize = maskdataset.shape
 	if len(dsize)!=3 or background.shape!=dsize[1:]:
 		raise RuntimeError("Input a set of 2d patterns! background should have the same shape with input!")
-	center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
-	inner_shell = radp.circle(2, radii_range[0]) + np.array(center)
-	outer_shell = radp.circle(2, radii_range[1]) + np.array(center)
-	shell = np.zeros(dsize[1:])
-	shell[outer_shell[:,0], outer_shell[:,1]] = 1
-	shell[inner_shell[:,0], inner_shell[:,1]] = 0
-	shell[np.where(mask > 0)] = 0
-	shell_index = np.where(shell == 1)
-	del shell
-	# calculate chi square
+	# calculate
 	chi = np.zeros((dsize[0],1))
-	for ind,p in enumerate(maskdataset):
-		chi[ind,0] = np.sum( (p[shell_index] - maskbackground[shell_index])**2 )\
-					 / np.sum( (maskbackground[shell_index] - np.mean(maskbackground[shell_index]))**2 )
+	if radii_range is not None:
+		if radii_range[0] is not None and radii_range[1] is not None:
+			center = [0,0]
+			center[0] = radii_range[0]
+			center[1] = radii_range[1]
+		else:
+			center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+		inner_shell = radp.circle(2, radii_range[2]) + np.array(center).astype(int)
+		outer_shell = radp.circle(2, radii_range[3]) + np.array(center).astype(int)
+		shell = np.zeros(dsize[1:])
+		shell[outer_shell[:,0], outer_shell[:,1]] = 1
+		shell[inner_shell[:,0], inner_shell[:,1]] = 0
+		shell[np.where(mask > 0)] = 0
+		shell_index = np.where(shell == 1)
+		del shell
+		# calculate chi square
+		for ind,p in enumerate(maskdataset):
+			chi[ind,0] = np.sum( (p[shell_index] - maskbackground[shell_index])**2 )\
+						 / np.sum( (maskbackground[shell_index] - np.mean(maskbackground[shell_index]))**2 )
+	else:
+		# calculate chi square
+		for ind,p in enumerate(maskdataset):
+			chi[ind,0] = np.sum( (p - maskbackground)**2 )\
+						 / np.sum( (maskbackground - np.mean(maskbackground))**2 )
 	# predict
 	if type(cut_off)==float or type(cut_off)==int:
 		# cut-off
@@ -301,14 +313,13 @@ def hit_find(dataset, background, radii_range, mask=None, cut_off=None):
 			label = 1 - label
 	return label
 
-def hit_find_pearson(dataset, background, radii_range, mask=None, max_cc=0.5):
+def hit_find_pearson(dataset, background, radii_range=None, mask=None, max_cc=0.5):
 	dataset[np.isnan(dataset)] = 0
 	dataset[np.isinf(dataset)] = 0
 	dataset = np.abs(dataset)
 	background[np.isnan(background)] = 0
 	background[np.isinf(background)] = 0
 	background = np.abs(background)
-	radii_range = np.array(radii_range).astype(int)
 	if mask is not None:
 		maskdataset = dataset * (1 - mask)
 		maskbackground = background * (1 - mask)
@@ -318,13 +329,29 @@ def hit_find_pearson(dataset, background, radii_range, mask=None, max_cc=0.5):
 	dsize = maskdataset.shape
 	if len(dsize)!=3 or background.shape!=dsize[1:]:
 		raise RuntimeError("Input a set of 2d patterns! background should have the same shape with input!")
-	center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
-	# calculate radial profile
+	
 	cc = np.zeros(dsize[0])
-	radp_bg = radp.radial_profile_2d(background, center, mask)[radii_range[0]:radii_range[1],1]
-	for ind,p in enumerate(maskdataset):
-		radp_d = radp.radial_profile_2d(p, center, mask)[radii_range[0]:radii_range[1],1]
-		cc[ind] = criterion.Pearson_cc(radp_d, radp_bg, 0)
+	if radii_range is not None:
+		radii_range[2] = int(round(radii_range[2]))
+		radii_range[3] = int(round(radii_range[3]))
+		if radii_range[0] is None and radii_range[1] is None:
+			center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+		else:
+			center = [0,0]
+			center[0] = radii_range[0]
+			center[1] = radii_range[1]
+		# calculate radial profile
+		radp_bg = radp.radial_profile_2d(background, center, mask)[radii_range[2]:radii_range[3],1]
+		for ind,p in enumerate(maskdataset):
+			radp_d = radp.radial_profile_2d(p, center, mask)[radii_range[2]:radii_range[3],1]
+			cc[ind] = criterion.Pearson_cc(radp_d, radp_bg, 0)
+	else:
+		center = saxs.friedel_search(saxs.cal_saxs(maskdataset), np.array(dsize[1:])/2, mask)
+		# calculate radial profile
+		radp_bg = radp.radial_profile_2d(background, center, mask)[:,1]
+		for ind,p in enumerate(maskdataset):
+			radp_d = radp.radial_profile_2d(p, center, mask)[:,1]
+			cc[ind] = criterion.Pearson_cc(radp_d, radp_bg, 0)
 	# predict
 	label = np.zeros(dsize[0])
 	label[np.where(cc < max_cc)[0]] = 1
