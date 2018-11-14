@@ -120,6 +120,10 @@ def shells_3d(rads, data_shape, center):
 	return re
 
 def radp_norm_2d(ref_Iq, data, center, mask=None):
+	sum_ref_Iq = np.where(np.cumsum(ref_Iq)>1e-2)[0]
+	if len(sum_ref_Iq) == 0:
+		raise ValueError("reference Iq curve should not be 0")
+
 	center_0 = np.round(center)
 	x, y = np.indices((data.shape))
 	r = np.sqrt((x - center_0[0])**2 + (y - center_0[1])**2)
@@ -143,7 +147,12 @@ def radp_norm_2d(ref_Iq, data, center, mask=None):
 
 	norm_factor = np.zeros(radialprofile.shape)
 	normed_len = min(len(ref_Iq), len(radialprofile))
-	stop_rad = max(np.where(np.cumsum(ref_Iq)>1e-2)[0][0], np.where(np.cumsum(radialprofile)>1e-2)[0][0])
+
+	sum_radp = np.where(np.cumsum(radialprofile)>1e-2)[0]
+	if len(sum_radp) == 0:
+		return data
+
+	stop_rad = max(sum_ref_Iq[0], sum_radp[0])
 	norm_factor[stop_rad:normed_len] = ref_Iq[stop_rad:normed_len]/radialprofile[stop_rad:normed_len]
 
 	newdata = np.zeros(data.shape)
@@ -152,6 +161,10 @@ def radp_norm_2d(ref_Iq, data, center, mask=None):
 	return newdata
 
 def radp_norm_3d(ref_Iq, data, center, mask=None):
+	sum_ref_Iq = np.where(np.cumsum(ref_Iq)>1e-2)[0]
+	if len(sum_ref_Iq) == 0:
+		raise ValueError("reference Iq curve should not be 0")
+
 	center_0 = np.round(center)
 	x, y, z = np.indices((data.shape))
 	r = np.sqrt((x-center_0[0])**2 + (y-center_0[1])**2 +(z-center_0[2])**2)
@@ -175,7 +188,12 @@ def radp_norm_3d(ref_Iq, data, center, mask=None):
 
 	norm_factor = np.zeros(radialprofile.shape)
 	normed_len = min(len(ref_Iq), len(radialprofile))
-	stop_rad = max(np.where(np.cumsum(ref_Iq)>1e-2)[0][0], np.where(np.cumsum(radialprofile)>1e-2)[0][0])
+
+	sum_radp = np.where(np.cumsum(radialprofile)>1e-2)[0]
+	if len(sum_radp) == 0:
+		return data
+	
+	stop_rad = max(sum_ref_Iq[0], sum_radp[0])
 	norm_factor[stop_rad:normed_len] = ref_Iq[stop_rad:normed_len]/radialprofile[stop_rad:normed_len]
 
 	newdata = np.zeros(data.shape)
