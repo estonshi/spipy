@@ -90,6 +90,7 @@ def friedel_search(pattern, estimated_center, mask=None, small_r=None, large_r=N
 		maskpattern = pattern * (1 - mask)
 	else:
 		maskpattern = pattern
+
 	size = np.array(maskpattern.shape)
 	estimated_center = np.array(estimated_center).astype(int)
 	if small_r is None:
@@ -113,12 +114,17 @@ def friedel_search(pattern, estimated_center, mask=None, small_r=None, large_r=N
 		fred_zone = np.mgrid[cen[0]-fred_z[0]/2:cen[0]+fred_z[0]/2,cen[1]-fred_z[1]/2:cen[1]+fred_z[1]/2]
 		fred_zone = fred_zone.reshape((2,fred_zone.shape[1]*fred_zone.shape[2]))
 		inv_fred_zone = np.array([2*cen[0] - fred_zone[0], 2*cen[1] - fred_zone[1]])
-		no_mask_area = (mask[fred_zone[0],fred_zone[1]]==0) & (mask[inv_fred_zone[0],inv_fred_zone[1]]==0)
-		this_score = 2 * np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] - maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
+		if mask is not None:
+			no_mask_area = (mask[fred_zone[0],fred_zone[1]]==0) & (mask[inv_fred_zone[0],inv_fred_zone[1]]==0)
+			this_score = 2 * np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] - maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
 					* no_mask_area.astype(float)) \
 					/ np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] + maskpattern[inv_fred_zone[0], inv_fred_zone[1]])\
 					 * no_mask_area.astype(float))
-		this_score /= len(np.where(no_mask_area)[0])
+			this_score /= len(np.where(no_mask_area)[0])
+		else:
+			this_score = 2 * np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] - maskpattern[inv_fred_zone[0], inv_fred_zone[1]])) \
+					/ np.sum(np.abs(maskpattern[fred_zone[0],fred_zone[1]] + maskpattern[inv_fred_zone[0], inv_fred_zone[1]]))
+			this_score /= len(fred_zone[0])
 		if score>this_score:
 			center = cen
 			score = this_score
