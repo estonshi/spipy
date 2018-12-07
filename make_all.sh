@@ -146,12 +146,8 @@ tmp=`conda list | grep "mrcfile"`
 if [ -z "$tmp" ];then pip install mrcfile;fi
 if [ $? -ne 0 ];then echo $?; exit 1;fi
 
-tmp=`conda list | grep "openmpi"`
-if [ -z "$tmp" ];then conda install -c mpi4py openmpi;fi
-if [ $? -ne 0 ];then echo $?; exit 1;fi
-
 tmp=`conda list | grep "mpi4py"`
-if [ -z "$tmp" ];then conda install -c anaconda mpi4py;fi
+if [ -z "$tmp" ];then pip install mpi4py;fi
 if [ $? -ne 0 ];then echo $?; exit 1;fi
 
 
