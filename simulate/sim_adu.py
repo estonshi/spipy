@@ -41,7 +41,8 @@ class simulation():
 					'parameters|detsize' : 128, 'parameters|pixsize' : 0.3, \
 					'parameters|stoprad' : 0, 'parameters|polarization' : 'x', \
 					'make_data|num_data' : 100, 'make_data|fluence' : 1e14, \
-					'make_data|scatter_factor' : False, 'make_data|ram_first' : True}
+					'make_data|scatter_factor' : False, 'make_data|ram_first' : True, \
+					'make_data|poisson' : False}
 	euler = None  # alpha 0,2pi ; beta 0,pi ; gamma 0,2pi  shape=(Ne,3) [intrisinc]
 	order = None  # rotation order 'zxz','zyz',...
 	atoms = {'coordinate':None, 'index':None} # (angstrom) coordinate.shape=(Na,3)
@@ -197,7 +198,7 @@ class simulation():
 		new_atoms['coordinate'] = new_coor
 		return new_atoms
 
-	def generate_pattern(self, euler_angles, patt):
+	def generate_pattern(self, euler_angles, patt, verbose):
 		import psutil
 		import time
 		import gc
@@ -209,6 +210,7 @@ class simulation():
 		det_d = np.float32(self.config_param['parameters|detd'])
 		det_ps = np.float32(self.config_param['parameters|pixsize'])
 		det_lambda = np.float32(self.config_param['parameters|lambda'])
+		poisson = self.config_param['make_data|poisson']
 		ati = self.atoms['index']
 		ati = ati.reshape((len(ati),1)).astype(int)
 		# calculate detector information
@@ -245,7 +247,8 @@ class simulation():
 					else:
 						temp *= scatt
 					pat[ii] = np.sum(temp)
-				print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
+				if verbose:
+					print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
 			else:
 				# forced to use cblas lib to accelerate
 				gemm = get_blas_funcs("gemm",[dr.astype(np.float32),dk.T.astype(np.float32)])
@@ -256,19 +259,23 @@ class simulation():
 					pat *= scatt[ati, pix_r]
 				else:
 					pat *= scatt
-				print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
+				if verbose:
+					print u"RAM (MB): ",psutil.Process(os.getpid()).memory_info().rss/1024.0**2
 				pat = np.sum(pat,axis=0)
 			pat = pat.reshape((det_l, det_l))
 			pat = np.abs(pat)**2
-			# evaluate adu
-			adu = np.float32(self.config_param['make_data|fluence'] * 12398.419 / det_lambda / 1e12)
-			patt[ind] = pat * adu/np.sum(pat)
+			# evaluate adu and add noise
+			adu = float(self.config_param['make_data|fluence'] * 12398.419 / det_lambda / 1e12)
+			if poisson:
+				patt[ind] = np.random.poisson( pat * adu/np.sum(pat) ).astype(float)
+			else:
+				patt[ind] = pat * adu/np.sum(pat)
 			del pat
 			gc.collect()
 			print('Done. Time (s): '+str(time.time()-time0))
 		return patt
 
-	def assemble(self):
+	def assemble(self, verbose=True):
 		if self.order is None or self.oversampl is None:
 			raise RuntimeError('Please configure and generate euler first!')
 		from spipy.image import radp
@@ -278,7 +285,7 @@ class simulation():
 		bstopR = self.config_param['parameters|stoprad']
 		patterns = np.zeros((num_pat, det_l, det_l))
 		# generate patterns
-		self.generate_pattern(self.euler, patterns)
+		self.generate_pattern(self.euler, patterns, verbose)
 		if bstopR is not None and bstopR > 0:
 			beam_stop = radp.circle(2, bstopR) + (np.array(patterns.shape[1:])-1)/2
 			patterns[:,beam_stop[:,0],beam_stop[:,1]] = 0
@@ -290,7 +297,7 @@ class simulation():
 		return output
 
 
-def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None, save_dir=None):
+def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None, save_dir=None, verbose=True):
 	import h5py
 	import time
 
@@ -301,7 +308,7 @@ def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', eule
 	if m_rank == 0:
 		print('\nOversampling rate is : '+str(sim.oversampl))
 	sim.generate_euler(euler_mode, euler_order, euler_range, predefined)
-	dataset = sim.assemble()
+	dataset = sim.assemble(verbose)
 	if save_dir is not None:
 		# save h5
 		time_seed = time.ctime()
@@ -321,7 +328,7 @@ def single_process(pdb_file, param, euler_mode='random', euler_order='zxz', eule
 		return dataset
 
 
-def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None):
+def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='zxz', euler_range=None, predefined=None, verbose=True):
 	import h5py
 	import time
 
@@ -332,13 +339,16 @@ def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='z
 		if m_size<=1:
 			raise ValueError('Number of jobs should not <=1')
 
+	if euler_mode=='predefined':
+		num_pat = len(predefined)
+	else:
+		num_pat = param['make_data|num_data']
+
+	pool_bin = np.linspace(0, num_pat, m_size+1, dtype=int)
+
 	# split num_pat
 	if m_rank == 0:
-		if euler_mode=='predefined':
-			num_pat = len(predefined)
-		else:
-			num_pat = param['make_data|num_data']
-		pool_bin = np.linspace(0, num_pat, m_size+1, dtype=int)
+
 		# split euler
 		if euler_mode=='random' or euler_mode=='helix':
 			if euler_range is not None:
@@ -349,8 +359,25 @@ def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='z
 				alpha_bin = np.linspace(0, np.pi*2, m_size+1)
 				beta_bin = np.linspace(0, np.pi, m_size+1)
 				gamma_bin = np.linspace(0, np.pi*2, m_size+1)
-	# mpi
-	if m_rank == 0:
+
+		# generate h5 name, and write dataset structure
+		time_seed = time.ctime()
+		time_seed = time_seed.replace(' ','_')
+		time_seed = time_seed.replace(':','_')
+		savefilename = os.path.join(save_dir, 'spipy_adu_simulation_'+time_seed+'.h5')
+
+		savef = h5py.File(savefilename, 'w')
+		grp = savef.create_group('simu_parameters')
+		for k, v in param.iteritems():
+			grp.create_dataset(k, data=v)
+		savef.create_dataset('patterns', (num_pat, \
+		param['parameters|detsize'], param['parameters|detsize']), \
+			dtype=float, chunks=True, compression="gzip")
+		savef.create_dataset('euler_angles', (num_pat, 3), \
+			dtype=float, chunks=True, compression="gzip")
+		savef.close()
+
+		# mpi
 		for ind, i in enumerate(pool_bin[:-1]):
 			param_copy = param.copy()
 			param_copy['make_data|num_data'] = int(pool_bin[ind+1]-i)
@@ -360,40 +387,33 @@ def multi_process(save_dir, pdb_file, param, euler_mode='random', euler_order='z
 			elif euler_mode=='predefined':
 				euler_defined_copy = predefined[i:pool_bin[ind+1]]
 				euler_range_copy = None
-			if ind < m_size-1:
-				comm.send([param_copy, euler_range_copy, euler_defined_copy], dest=ind+1)
-	if m_rank > 0:
-		param_copy, euler_range_copy, euler_defined_copy = comm.recv(source=0)
+			comm.send([param_copy, euler_range_copy, euler_defined_copy, savefilename], dest=ind)
+
+	# recv
+	param_copy, euler_range_copy, euler_defined_copy, savefilename = comm.recv(source=0)
 
 	# run single_process
-	solution = single_process(pdb_file, param_copy, euler_mode, euler_order, euler_range_copy, euler_defined_copy, None)
-	
-	# mpi gather and merge solutions
-	combined_dataset = comm.gather(solution, root=0)
+	solution = single_process(pdb_file, param_copy, euler_mode, euler_order, euler_range_copy, euler_defined_copy, None, verbose)
 
+	# write to h5
+	savef = None
+	while savef is None:
+		try:
+			savef = h5py.File(savefilename, 'a')
+		except:
+			savef = None
+	
+	savef['patterns'][pool_bin[m_rank]:pool_bin[m_rank+1]] = solution['patterns']
+	savef['euler_angles'][pool_bin[m_rank]:pool_bin[m_rank+1]] = solution['euler_angles']
+	savef.close()
+
+	comm.Barrier()
+
+	# write additional infomation to output h5
 	if m_rank == 0:
-		patterns = np.zeros((num_pat, param['parameters|detsize'], param['parameters|detsize']))
-		eul_angles = np.zeros((num_pat, 3))
-		oversampling_rate = None
-		# merge solutions
-		pin = 0
-		for ind,solution in enumerate(combined_dataset):
-			num = solution['patterns'].shape[0]
-			patterns[pin:pin+num] = solution['patterns']
-			eul_angles[pin:pin+num] = solution['euler_angles']
-			oversampling_rate = solution['oversampling_rate']
-			pin += num
-		# save h5
-		time_seed = time.ctime()
-		time_seed = time_seed.replace(' ','_')
-		time_seed = time_seed.replace(':','_')
-		savef = h5py.File(os.path.join(save_dir, 'spipy_adu_simulation_'+time_seed+'.h5'), 'w')
+		oversampling_rate = solution['oversampling_rate']
+		savef = h5py.File(savefilename, 'a')
 		savef.create_dataset('oversampling_rate', data=oversampling_rate)
 		savef.create_dataset('rotation_order', data=euler_order)
-		savef.create_dataset('patterns', data=patterns, chunks=True, compression="gzip")
-		savef.create_dataset('euler_angles', data=eul_angles, chunks=True, compression="gzip")
-		grp = savef.create_group('simu_parameters')
-		for k, v in param.iteritems():
-			grp.create_dataset(k, data=v)
 		savef.close()
 
